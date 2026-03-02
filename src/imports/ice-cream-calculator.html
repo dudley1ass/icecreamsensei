@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Ice Cream Mix Calculator</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 980px; }
+    h1 { margin: 0 0 8px; }
+    .muted { color: #666; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 16px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    th { text-align: left; font-weight: 600; }
+    select, input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 10px; }
+    input[type="number"] { text-align: right; }
+    .row-actions { display: flex; gap: 8px; }
+    button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 10px; background: #f7f7f7; cursor: pointer; }
+    button:hover { background: #efefef; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .kpi { font-size: 18px; font-weight: 650; }
+    .kpi small { font-weight: 500; color: #666; display: block; margin-top: 4px; }
+    .badges { display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px;}
+    .badge { border:1px solid #eee; border-radius: 999px; padding: 6px 10px; background: #fafafa; }
+    .footer { margin-top: 18px; font-size: 14px; color: #666; }
+    .tiny { font-size: 12px; color: #777; }
+    .right { text-align:right; }
+  </style>
+</head>
+<body>
+  <h1>Ice Cream Mix Calculator</h1>
+  <div class="muted">Pick ingredients + grams. The mix analysis updates automatically.</div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <div>
+        <div class="kpi" id="totalMass">0 g <small>Total mix mass</small></div>
+      </div>
+      <div class="row-actions">
+        <button id="addRowBtn">+ Add ingredient</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div style="margin-top: 12px; overflow:auto;">
+      <table id="mixTable">
+        <thead>
+          <tr>
+            <th style="min-width: 260px;">Ingredient</th>
+            <th style="min-width: 130px;" class="right">Grams</th>
+            <th style="min-width: 110px;">Category</th>
+            <th style="min-width: 110px;">Notes</th>
+            <th style="min-width: 90px;">Remove</th>
+          </tr>
+        </thead>
+        <tbody id="mixBody"></tbody>
+      </table>
+    </div>
+
+    <div class="footer tiny">
+      Tip: weigh in grams. (If you only have cups/tbsp, tell me your recipe and I’ll convert it.)
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Results</h2>
+
+    <div class="grid">
+      <div class="kpi" id="fatPct">0.00% <small>Fat</small></div>
+      <div class="kpi" id="sugarPct">0.00% <small>Sugar solids</small></div>
+      <div class="kpi" id="msnfPct">0.00% <small>MSNF (milk solids-not-fat)</small></div>
+      <div class="kpi" id="waterPct">0.00% <small>Water</small></div>
+      <div class="kpi" id="totalSolidsPct">0.00% <small>Total solids</small></div>
+      <div class="kpi" id="podPac">POD 0 / PAC 0 <small>Sweetness / Softness indices (relative)</small></div>
+    </div>
+
+    <div class="badges" id="flags"></div>
+
+    <div class="footer">
+      <div><b>Typical premium targets:</b> Fat 12–16% • Sugar 14–16% • MSNF 9–11% • Total solids 36–40%</div>
+      <div class="tiny">POD = sweetness (sucrose=1). PAC = freezing point depression / softness (sucrose=1). Higher PAC → softer at freezer temps.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Ingredient profiles</h2>
+    <div class="tiny">
+      These are engineering defaults. Brands vary. If you want “label-accurate,” send me the nutrition label and I’ll tune the profile.
+    </div>
+  </div>
+
+<script>
+/**
+ * Ingredient composition fractions by weight (0-1).
+ * Keep sums <= 1.0 (the remainder is assumed "unknown", but should be ~0).
+ *
+ * We store:
+ *  fat, msnf, sugar, other_solids, water, category, notes
+ */
+const INGREDIENTS = {
+  // DAIRY
+  "whole_milk":        { label: "Whole milk", fat:0.0325, msnf:0.087, sugar:0.0, other_solids:0.0, water:0.8805, category:"Dairy", notes:"~3.25% fat" },
+  "skim_milk":         { label: "Skim milk", fat:0.001,  msnf:0.090, sugar:0.0, other_solids:0.0, water:0.909,  category:"Dairy", notes:"low fat" },
+  "half_and_half":     { label: "Half & half", fat:0.12,  msnf:0.075, sugar:0.0, other_solids:0.0, water:0.805,  category:"Dairy", notes:"~12% fat" },
+  "heavy_cream_36":    { label: "Heavy cream (36%)", fat:0.36, msnf:0.056, sugar:0.0, other_solids:0.0, water:0.584, category:"Dairy", notes:"premium base" },
+
+  // DRY MILK SOLIDS
+  "skim_milk_powder":  { label: "Skim milk powder (SMP)", fat:0.008, msnf:0.962, sugar:0.0, other_solids:0.0, water:0.03,  category:"Milk solids", notes:"boost MSNF/body" },
+  "whey_powder":       { label: "Whey powder", fat:0.01, msnf:0.93,  sugar:0.0, other_solids:0.0, water:0.06,  category:"Milk solids", notes:"rough profile" },
+
+  // SWEETENERS (counted as sugar solids)
+  "sucrose":           { label: "Sugar (sucrose)", fat:0, msnf:0, sugar:1.0, other_solids:0, water:0, category:"Sweetener", notes:"baseline" },
+  "dextrose":          { label: "Dextrose (glucose)", fat:0, msnf:0, sugar:1.0, other_solids:0, water:0, category:"Sweetener", notes:"less sweet, softer" },
+  "fructose":          { label: "Fructose", fat:0, msnf:0, sugar:1.0, other_solids:0, water:0, category:"Sweetener", notes:"very sweet" },
+  "corn_syrup_solids": { label: "Corn syrup solids", fat:0, msnf:0, sugar:1.0, other_solids:0, water:0, category:"Sweetener", notes:"body/anti-ice" },
+  "invert_sugar":      { label: "Invert sugar", fat:0, msnf:0, sugar:1.0, other_solids:0, water:0, category:"Sweetener", notes:"smooth texture" },
+  "honey":             { label: "Honey", fat:0, msnf:0, sugar:0.82, other_solids:0, water:0.18, category:"Sweetener", notes:"varies by brand" },
+
+  // EGGS
+  "egg_yolk":          { label: "Egg yolk", fat:0.33, msnf:0.0, sugar:0.0, other_solids:0.17, water:0.50, category:"Emulsifier", notes:"custard style" },
+
+  // ADD-INS / SOLIDS
+  "cocoa_powder":      { label: "Cocoa powder", fat:0.0, msnf:0.0, sugar:0.0, other_solids:1.0, water:0.0, category:"Other solids", notes:"treat as solids" },
+
+  // PUDDING MIX (common home hack)
+  // Default assumption: mostly sugar + modified starch (solids). Brands vary a lot.
+  // Here: 65% sugar solids, 35% other solids.
+  "instant_pudding_mix": { label: "Instant pudding mix (generic)", fat:0.0, msnf:0.0, sugar:0.65, other_solids:0.35, water:0.0, category:"Stabilizer blend", notes:"estimate; adjust if needed" },
+
+  // WATER
+  "water":             { label: "Water", fat:0.0, msnf:0.0, sugar:0.0, other_solids:0.0, water:1.0, category:"Water", notes:"" },
+};
+
+// Sweetener relative indices vs sucrose
+const SWEETENERS = {
+  "sucrose":           { POD:1.0,  PAC:1.0 },
+  "dextrose":          { POD:0.70, PAC:1.90 },
+  "fructose":          { POD:1.70, PAC:1.90 },
+  "invert_sugar":      { POD:1.25, PAC:1.30 },
+  "corn_syrup_solids": { POD:0.50, PAC:1.30 },
+  "honey":             { POD:1.25, PAC:1.30 }, // approximate like invert
+};
+
+// ---- UI state ----
+let rows = [];
+
+function el(tag, attrs={}, children=[]) {
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k === "html") e.innerHTML = v;
+    else if (k.startsWith("on") && typeof v === "function") e.addEventListener(k.substring(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of children) e.appendChild(c);
+  return e;
+}
+
+function formatPct(x) { return (isFinite(x) ? x.toFixed(2) : "0.00") + "%"; }
+function format1(x) { return isFinite(x) ? x.toFixed(1) : "0.0"; }
+
+function addRow(defaultKey="whole_milk", grams=0) {
+  rows.push({ key: defaultKey, grams: grams });
+  render();
+  recalc();
+}
+
+function removeRow(idx) {
+  rows.splice(idx, 1);
+  render();
+  recalc();
+}
+
+function reset() {
+  rows = [
+    { key:"whole_milk", grams: 500 },
+    { key:"heavy_cream_36", grams: 300 },
+    { key:"sucrose", grams: 140 },
+    { key:"skim_milk_powder", grams: 40 },
+    { key:"egg_yolk", grams: 50 },
+  ];
+  render();
+  recalc();
+}
+
+function ingredientOptions(selectedKey) {
+  const groups = {};
+  for (const [k, v] of Object.entries(INGREDIENTS)) {
+    groups[v.category] ||= [];
+    groups[v.category].push([k, v.label]);
+  }
+  const select = el("select", {});
+  // group order (optional)
+  const order = ["Dairy","Milk solids","Sweetener","Emulsifier","Stabilizer blend","Other solids","Water"];
+  const categories = order.filter(c => groups[c]).concat(Object.keys(groups).filter(c => !order.includes(c)));
+
+  for (const cat of categories) {
+    const og = el("optgroup", { label: cat });
+    for (const [k,label] of groups[cat].sort((a,b)=>a[1].localeCompare(b[1]))) {
+      const opt = el("option", { value:k, });
+      opt.textContent = label;
+      if (k === selectedKey) opt.selected = true;
+      og.appendChild(opt);
+    }
+    select.appendChild(og);
+  }
+  return select;
+}
+
+function render() {
+  const body = document.getElementById("mixBody");
+  body.innerHTML = "";
+
+  rows.forEach((r, idx) => {
+    const ing = INGREDIENTS[r.key];
+
+    const sel = ingredientOptions(r.key);
+    sel.addEventListener("change", (e) => {
+      rows[idx].key = e.target.value;
+      render(); // to update category/notes display
+      recalc();
+    });
+
+    const gramsInput = el("input", { type:"number", min:"0", step:"1", value: String(r.grams ?? 0) });
+    gramsInput.addEventListener("input", (e) => {
+      rows[idx].grams = Number(e.target.value || 0);
+      recalc();
+    });
+
+    const tr = document.createElement("tr");
+    tr.appendChild(el("td", {}, [sel]));
+    tr.appendChild(el("td", { class:"right" }, [gramsInput]));
+    tr.appendChild(el("td", { html: ing.category }));
+    tr.appendChild(el("td", { html: ing.notes || "" }));
+
+    const rmBtn = el("button", { }, []);
+    rmBtn.textContent = "✕";
+    rmBtn.addEventListener("click", () => removeRow(idx));
+    tr.appendChild(el("td", {}, [rmBtn]));
+
+    body.appendChild(tr);
+  });
+}
+
+function recalc() {
+  let mass = 0;
+  let fat = 0, msnf = 0, sugar = 0, other = 0, water = 0;
+  let POD_total = 0, PAC_total = 0;
+
+  for (const r of rows) {
+    const g = Number(r.grams || 0);
+    if (g <= 0) continue;
+    const p = INGREDIENTS[r.key];
+    mass += g;
+    fat += g * (p.fat || 0);
+    msnf += g * (p.msnf || 0);
+    sugar += g * (p.sugar || 0);
+    other += g * (p.other_solids || 0);
+    water += g * (p.water || 0);
+
+    // POD/PAC: only for sweetener solids with known props
+    if ((p.sugar || 0) > 0 && SWEETENERS[r.key]) {
+      const sugarSolids = g * p.sugar;
+      POD_total += sugarSolids * SWEETENERS[r.key].POD;
+      PAC_total += sugarSolids * SWEETENERS[r.key].PAC;
+    }
+  }
+
+  const totalSolids = fat + msnf + sugar + other;
+
+  const pct = (x) => mass > 0 ? (100 * x / mass) : 0;
+
+  const fatPct = pct(fat);
+  const msnfPct = pct(msnf);
+  const sugarPct = pct(sugar);
+  const waterPct = pct(water);
+  const totalSolidsPct = pct(totalSolids);
+
+  const POD_per_kg = mass > 0 ? (POD_total / mass * 1000) : 0;
+  const PAC_per_kg = mass > 0 ? (PAC_total / mass * 1000) : 0;
+
+  document.getElementById("totalMass").innerHTML = `${format1(mass)} g <small>Total mix mass</small>`;
+  document.getElementById("fatPct").innerHTML = `${formatPct(fatPct)} <small>Fat</small>`;
+  document.getElementById("sugarPct").innerHTML = `${formatPct(sugarPct)} <small>Sugar solids</small>`;
+  document.getElementById("msnfPct").innerHTML = `${formatPct(msnfPct)} <small>MSNF (milk solids-not-fat)</small>`;
+  document.getElementById("waterPct").innerHTML = `${formatPct(waterPct)} <small>Water</small>`;
+  document.getElementById("totalSolidsPct").innerHTML = `${formatPct(totalSolidsPct)} <small>Total solids</small>`;
+  document.getElementById("podPac").innerHTML = `POD ${format1(POD_per_kg)} / PAC ${format1(PAC_per_kg)} <small>Sweetness / Softness indices (relative)</small>`;
+
+  const flags = [];
+  if (fatPct < 10) flags.push("Fat looks low → can feel icy/thin.");
+  if (fatPct > 18) flags.push("Fat looks high → can feel waxy/greasy, muted flavor.");
+  if (sugarPct < 12) flags.push("Sugar looks low → likely hard/icy.");
+  if (sugarPct > 18) flags.push("Sugar looks high → may be slushy/soft, overly sweet.");
+  if (msnfPct < 8) flags.push("MSNF looks low → weaker body, more iciness.");
+  if (msnfPct > 12) flags.push("MSNF looks high → risk of lactose sandiness / dry finish.");
+  if (totalSolidsPct < 34) flags.push("Total solids low → icier, faster melt.");
+  if (totalSolidsPct > 42) flags.push("Total solids high → heavy/chewy/pasty risk.");
+
+  const flagsDiv = document.getElementById("flags");
+  flagsDiv.innerHTML = "";
+  flags.forEach(t => flagsDiv.appendChild(el("div", { class:"badge", html: t })));
+}
+
+// ---- wire up ----
+document.getElementById("addRowBtn").addEventListener("click", () => addRow("whole_milk", 0));
+document.getElementById("resetBtn").addEventListener("click", reset);
+
+// initial
+reset();
+</script>
+</body>
+</html>
