@@ -627,7 +627,7 @@ export default function App() {
             </h1>
           </div>
           <p className="text-gray-600">
-            Pick ingredients and grams. The mix analysis updates automatically.
+            Pick ingredients. The mix analysis updates automatically.
           </p>
         </div>
 
@@ -642,32 +642,32 @@ export default function App() {
                 <div className="text-sm text-gray-500 mt-1">Total mix {unitSystem === 'volumetric' ? 'volume' : 'mass'}</div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                <div className="flex flex-col sm:flex-row gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
                   <Button 
                     onClick={() => setUnitSystem('metric')} 
                     variant={unitSystem === 'metric' ? 'default' : 'ghost'}
                     size="sm"
-                    className="gap-2"
+                    className="gap-1 text-xs sm:text-sm flex-1 sm:flex-initial"
                   >
-                    <Weight className="w-4 h-4" />
+                    <Weight className="w-3 h-3 sm:w-4 sm:h-4" />
                     Metric (g)
                   </Button>
                   <Button 
                     onClick={() => setUnitSystem('imperial')} 
                     variant={unitSystem === 'imperial' ? 'default' : 'ghost'}
                     size="sm"
-                    className="gap-2"
+                    className="gap-1 text-xs sm:text-sm flex-1 sm:flex-initial"
                   >
-                    <Weight className="w-4 h-4" />
+                    <Weight className="w-3 h-3 sm:w-4 sm:h-4" />
                     Imperial (oz)
                   </Button>
                   <Button 
                     onClick={() => setUnitSystem('volumetric')} 
                     variant={unitSystem === 'volumetric' ? 'default' : 'ghost'}
                     size="sm"
-                    className="gap-2"
+                    className="gap-1 text-xs sm:text-sm flex-1 sm:flex-initial"
                   >
-                    <Weight className="w-4 h-4" />
+                    <Weight className="w-3 h-3 sm:w-4 sm:h-4" />
                     Volumetric
                   </Button>
                 </div>
