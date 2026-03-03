@@ -67,6 +67,14 @@ export function NutritionFacts({
     servingMultiplier = SERVING_SIZE_ML / totalVolumeML;
   }
   
+  // Handle invalid calculations (prevent NaN and Infinity)
+  if (!isFinite(servingsPerContainer) || servingsPerContainer <= 0) {
+    servingsPerContainer = 0;
+  }
+  if (!isFinite(servingMultiplier) || servingMultiplier <= 0) {
+    servingMultiplier = 0;
+  }
+  
   // Calculate lactose (from MSNF) first since we need it for total carbs
   const lactoseGrams = msnfGrams * 0.55; // MSNF is ~55% lactose
   

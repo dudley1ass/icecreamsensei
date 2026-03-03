@@ -642,18 +642,35 @@ export default function App() {
                 <div className="text-sm text-gray-500 mt-1">Total mix {unitSystem === 'volumetric' ? 'volume' : 'mass'}</div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button 
-                  onClick={() => {
-                    if (unitSystem === 'metric') setUnitSystem('imperial');
-                    else if (unitSystem === 'imperial') setUnitSystem('volumetric');
-                    else setUnitSystem('metric');
-                  }} 
-                  variant="outline" 
-                  className="gap-2"
-                >
-                  <Weight className="w-4 h-4" />
-                  {unitSystem === 'metric' ? 'Metric (g)' : unitSystem === 'imperial' ? 'Imperial (oz)' : 'Volumetric'}
-                </Button>
+                <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                  <Button 
+                    onClick={() => setUnitSystem('metric')} 
+                    variant={unitSystem === 'metric' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Weight className="w-4 h-4" />
+                    Metric (g)
+                  </Button>
+                  <Button 
+                    onClick={() => setUnitSystem('imperial')} 
+                    variant={unitSystem === 'imperial' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Weight className="w-4 h-4" />
+                    Imperial (oz)
+                  </Button>
+                  <Button 
+                    onClick={() => setUnitSystem('volumetric')} 
+                    variant={unitSystem === 'volumetric' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Weight className="w-4 h-4" />
+                    Volumetric
+                  </Button>
+                </div>
                 <Dialog open={isAddIngredientOpen} onOpenChange={setIsAddIngredientOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2">
