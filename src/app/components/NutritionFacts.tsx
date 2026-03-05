@@ -82,8 +82,10 @@ export function NutritionFacts({
   const servingFat = fatGrams * servingMultiplier;
   const servingSugar = sugarGrams * servingMultiplier;
   const servingProtein = proteinGrams * servingMultiplier;
-  // Total Carbs = Added sugars + Lactose (from milk) + Fiber + Other carbs from other_solids
-  const servingCarbs = (sugarGrams + lactoseGrams + fiberGrams + (otherSolidsGrams - proteinGrams)) * servingMultiplier;
+  // Total Carbs = Added sugars + Lactose (from milk) + Fiber
+  // Note: other_solids contains protein, cocoa solids, minerals, etc. - not all are carbs
+  // For ice cream, most carbs come from sugars (added + lactose) and fiber
+  const servingCarbs = (sugarGrams + lactoseGrams + fiberGrams) * servingMultiplier;
   const servingSaturatedFat = saturatedFatGrams * servingMultiplier;
   const servingTransFat = transFatGrams * servingMultiplier;
   const servingCholesterol = cholesterolMg * servingMultiplier;
