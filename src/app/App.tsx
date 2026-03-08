@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from './components/ui/label';
 import { NutritionFacts } from './components/NutritionFacts';
 import { PODPACScales } from './components/PODPACScales';
+import { RecipeSuggestions } from './components/RecipeSuggestions';
 
 // Ingredient composition fractions by weight (0-1)
 interface IngredientProfile {
@@ -433,6 +434,20 @@ export default function App() {
     ]);
   };
 
+  const loadRecipe = (recipeIngredients: { key: string; grams: number }[]) => {
+    const newRows = recipeIngredients.map((ing) => {
+      const ingredient = customIngredients[ing.key];
+      const isEgg = ing.key === 'egg_yolk' || ing.key === 'whole_egg';
+      return {
+        key: ing.key,
+        grams: ing.grams,
+        volumetricUnit: ingredient?.volumetricUnit || 'cup',
+        eggSize: isEgg ? 'large' : undefined,
+      } as IngredientRow;
+    });
+    setRows(newRows);
+  };
+
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'Dairy':
@@ -841,6 +856,10 @@ export default function App() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                <RecipeSuggestions 
+                  ingredients={customIngredients}
+                  onLoadRecipe={loadRecipe}
+                />
                 <Button onClick={addRow} className="gap-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
                   <Plus className="w-4 h-4" />
                   Add Ingredient
