@@ -18,6 +18,7 @@
   },
   "include": ["src"],
   "exclude": [
+    "src/app/components/FeaturedExperiments.tsx",
     "src/app/components/ui/accordion.tsx",
     "src/app/components/ui/alert-dialog.tsx",
     "src/app/components/ui/aspect-ratio.tsx",
