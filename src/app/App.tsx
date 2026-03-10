@@ -1107,40 +1107,58 @@ export default function App() {
                         </div>
                       </div>
                       ) : (
-                        <div className="w-32">
-                        <div className="relative">
+                        <div className="w-36">
+                        {unitSystem === 'volumetric' && row.key ? (
+                          // Volumetric: show friendly fraction with +/- buttons
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                const ing = customIngredients[row.key];
+                                if (ing) {
+                                  const stepGrams = 0.125 * 236.588 * (ing.density || 1.0);
+                                  updateRow(index, 'grams', Math.max(0, row.grams - stepGrams));
+                                }
+                              }}
+                              className="w-7 h-9 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold text-lg flex items-center justify-center flex-shrink-0"
+                            >−</button>
+                            <div className="flex-1 h-9 rounded-lg border border-gray-300 bg-white flex items-center justify-center px-1">
+                              <span className="text-sm font-semibold text-cyan-700 text-center leading-tight">
+                                {row.grams > 0 ? formatVolumetricLabel(row.grams, row.key, row.volumetricUnit) : '0'}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                const ing = customIngredients[row.key];
+                                if (ing) {
+                                  const stepGrams = 0.125 * 236.588 * (ing.density || 1.0);
+                                  updateRow(index, 'grams', row.grams + stepGrams);
+                                }
+                              }}
+                              className="w-7 h-9 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold text-lg flex items-center justify-center flex-shrink-0"
+                            >+</button>
+                          </div>
+                        ) : (
+                          // Metric / Imperial: normal number input
+                          <div className="relative">
                           <Input
                             type="number"
                             min="0"
-                            step={unitSystem === 'volumetric' ? '0.125' : '0.1'}
+                            step="0.1"
                             value={formatAmount(row.grams, row.key, row.volumetricUnit, row.eggSize)}
                             onChange={(e) => {
                               const inputValue = Number(e.target.value);
                               let gramsValue = inputValue;
-                              
-                              // In volumetric mode the input value is always in cups
-                              if (unitSystem === 'volumetric' && row.key) {
-                                const ing = customIngredients[row.key];
-                                if (ing) {
-                                  const density = ing.density || 1.0;
-                                  gramsValue = inputValue * 236.588 * density;
-                                }
-                              } else if (unitSystem === 'imperial') {
+                              if (unitSystem === 'imperial') {
                                 gramsValue = inputValue * 28.3495;
                               }
-                              
                               updateRow(index, 'grams', gramsValue);
                             }}
                             className="text-right pr-10"
                             placeholder="0"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
-                            {unitSystem === 'volumetric' ? 'c' : getUnitLabel(row.key, row.volumetricUnit, row.eggSize)}
+                            {getUnitLabel(row.key, row.volumetricUnit, row.eggSize)}
                           </span>
-                        </div>
-                        {unitSystem === 'volumetric' && row.key && row.grams > 0 && (
-                          <div className="text-xs text-cyan-700 font-semibold mt-1 text-center">
-                            {formatVolumetricLabel(row.grams, row.key, row.volumetricUnit)}
                           </div>
                         )}
                       </div>
