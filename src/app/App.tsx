@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, RotateCcw, X, IceCream, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles } from 'lucide-react';
+import { Plus, RotateCcw, X, IceCream, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles, ArrowLeft } from 'lucide-react';
+import { IceCreamTypeSelector } from './components/IceCreamTypeSelector';
+import { iceCreamCategories, IceCreamCategory, IceCreamRecipe } from './types/iceCreamTypes';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Badge } from './components/ui/badge';
@@ -183,6 +185,8 @@ const INGREDIENTS: Record<string, IngredientProfile> = {
   vanilla_extract: { label: 'Vanilla extract', fat: 0.0, msnf: 0.0, sugar: 0.13, other_solids: 0.0, water: 0.65, protein: 0, category: 'Flavoring', notes: 'alcohol base', density: 0.88, volumetricUnit: 'tsp' },
   almond_extract: { label: 'Almond extract', fat: 0.0, msnf: 0.0, sugar: 0.0, other_solids: 0.0, water: 0.65, protein: 0, category: 'Flavoring', notes: 'alcohol base', density: 0.88, volumetricUnit: 'tsp' },
   mint_extract: { label: 'Mint extract', fat: 0.0, msnf: 0.0, sugar: 0.0, other_solids: 0.0, water: 0.65, protein: 0, category: 'Flavoring', notes: 'alcohol base', density: 0.88, volumetricUnit: 'tsp' },
+  lemon_zest: { label: 'Lemon zest', fat: 0.003, msnf: 0.0, sugar: 0.04, other_solids: 0.09, water: 0.79, protein: 0.015, category: 'Flavoring', notes: 'citrus oil', density: 0.50, volumetricUnit: 'tsp' },
+  salt: { label: 'Salt', fat: 0.0, msnf: 0.0, sugar: 0.0, other_solids: 1.0, water: 0.0, protein: 0, category: 'Flavoring', notes: 'enhances flavor', density: 1.20, volumetricUnit: 'tsp' },
 
   // WATER
   water: { label: 'Water', fat: 0.0, msnf: 0.0, sugar: 0.0, other_solids: 0.0, water: 1.0, protein: 0, category: 'Water', notes: '', density: 1.00, volumetricUnit: 'cup' },
@@ -190,6 +194,11 @@ const INGREDIENTS: Record<string, IngredientProfile> = {
   espresso: { label: 'Espresso', fat: 0.002, msnf: 0.0, sugar: 0.0, other_solids: 0.02, water: 0.978, protein: 0.002, category: 'Water', notes: 'concentrated coffee', density: 1.00, volumetricUnit: 'tbsp' },
   tea_brewed: { label: 'Tea (brewed)', fat: 0.0, msnf: 0.0, sugar: 0.0, other_solids: 0.002, water: 0.998, protein: 0, category: 'Water', notes: 'tea flavor', density: 1.00, volumetricUnit: 'cup' },
   matcha_tea: { label: 'Matcha powder', fat: 0.05, msnf: 0.0, sugar: 0.0, other_solids: 0.93, water: 0.02, protein: 0.290, category: 'Flavoring', notes: 'green tea powder', density: 0.40, volumetricUnit: 'tsp' },
+  cookie_pieces: { label: 'Cookie / Oreo pieces', fat: 0.17, msnf: 0.0, sugar: 0.45, other_solids: 0.37, water: 0.01, protein: 0.040, category: 'Mix-ins', notes: 'chunky mix-in', density: 0.55, volumetricUnit: 'cup' },
+  nut_paste: { label: 'Nut paste (pistachio/hazelnut)', fat: 0.50, msnf: 0.0, sugar: 0.08, other_solids: 0.35, water: 0.07, protein: 0.180, category: 'Mix-ins', notes: 'intense nut flavor', density: 1.05, volumetricUnit: 'tbsp' },
+  pecan_pieces: { label: 'Pecan pieces (toasted)', fat: 0.72, msnf: 0.0, sugar: 0.04, other_solids: 0.20, water: 0.04, protein: 0.091, category: 'Nuts/Seeds', notes: 'crunchy mix-in', density: 0.50, volumetricUnit: 'cup' },
+  butter_unsalted: { label: 'Unsalted butter', fat: 0.80, msnf: 0.01, sugar: 0.0, other_solids: 0.01, water: 0.18, protein: 0.009, category: 'Oils/Fats', notes: 'rich dairy fat', density: 0.91, volumetricUnit: 'tbsp' },
+  greek_yogurt: { label: 'Greek yogurt (full-fat)', fat: 0.05, msnf: 0.08, sugar: 0.04, other_solids: 0.02, water: 0.81, protein: 0.090, category: 'Dairy', notes: 'tangy, thick', density: 1.05, volumetricUnit: 'cup' },
 };
 
 const SWEETENERS: Record<string, { POD: number; PAC: number }> = {
@@ -229,7 +238,54 @@ interface IngredientRow {
   eggSize?: 'small' | 'medium' | 'large' | 'extra-large'; // For egg ingredients
 }
 
+// Map recipe ingredient names to INGREDIENTS keys
+const RECIPE_INGREDIENT_MAP: Record<string, string> = {
+  'Heavy Cream': 'heavy_cream_36',
+  'Whole Milk': 'whole_milk',
+  'Egg Yolks': 'egg_yolk',
+  'Granulated Sugar': 'sucrose',
+  'Vanilla Extract': 'vanilla_extract',
+  'Salt': 'salt',
+  'Dutch Cocoa Powder': 'cocoa_powder',
+  'Dark Chocolate': 'dark_chocolate_70',
+  'Fresh Strawberries': 'strawberry_puree',
+  'Peppermint Extract': 'vanilla_extract',
+  'Dark Chocolate Chips': 'dark_chocolate_70',
+  'Chocolate Sandwich Cookies': 'cookie_pieces',
+  'Pistachio Paste': 'nut_paste',
+  'Hazelnut Paste': 'nut_paste',
+  'Lemon Juice': 'lemon_juice',
+  'Lemon Zest': 'lemon_zest',
+  'Brown Sugar (Dark)': 'brown_sugar',
+  'Unsalted Butter': 'butter_unsalted',
+  'Pecans': 'pecan_pieces',
+  'Orange Juice': 'orange_juice',
+  'Orange Zest': 'lemon_zest',
+  'Fresh Raspberries': 'raspberry_puree',
+  'Lime Juice': 'lemon_juice',
+  'Lime Zest': 'lemon_zest',
+  'Water': 'water',
+  'Mango Puree': 'mango_puree',
+  'Passion Fruit Puree': 'mango_puree',
+  'Corn Syrup': 'corn_syrup_liquid',
+  'Full-Fat Greek Yogurt': 'greek_yogurt',
+  'Skim Milk Powder': 'skim_milk_powder',
+  'Corn Syrup Solids': 'corn_syrup_solids',
+  'Sweetened Condensed Milk': 'condensed_milk',
+  'Instant Espresso Powder': 'cocoa_powder',
+  'Toffee Bits': 'cookie_pieces',
+  'Full-Fat Coconut Cream': 'coconut_cream',
+  'Coconut Milk': 'coconut_milk',
+  'Raw Cashews (soaked)': 'nut_paste',
+  'Barista Oat Milk': 'whole_milk',
+};
+
 export default function App() {
+  // View: 'selector' = landing page, 'calculator' = mix calculator
+  const [view, setView] = useState<'selector' | 'calculator'>('selector');
+  const [selectedCategory, setSelectedCategory] = useState<IceCreamCategory | null>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<IceCreamRecipe | null>(null);
+
   // Unit system: 'metric', 'imperial', or 'volumetric'
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial' | 'volumetric'>('metric');
   
@@ -630,28 +686,100 @@ export default function App() {
 
   const categoryOrder = ['Dairy', 'Milk solids', 'Sweetener', 'Fruit', 'Chocolate', 'Mix-ins', 'Protein powder', 'Nuts/Seeds', 'Emulsifier', 'Stabilizer/Mix', 'Oils/Fats', 'Flavoring', 'Water', 'Other solids'];
 
+  // Handle selecting a category+recipe from the landing page
+  const handleSelectCategory = (category: IceCreamCategory, recipe: IceCreamRecipe) => {
+    setSelectedCategory(category);
+    setSelectedRecipe(recipe);
+    // Pre-load the recipe ingredients into the calculator rows
+    const newRows: IngredientRow[] = recipe.ingredients
+      .map(ing => {
+        const key = RECIPE_INGREDIENT_MAP[ing.name];
+        if (!key) return null;
+        const profile = customIngredients[key];
+        if (!profile) return null;
+        return {
+          key,
+          grams: ing.amount,
+          volumetricUnit: profile.volumetricUnit ?? 'cup',
+        } as IngredientRow;
+      })
+      .filter(Boolean) as IngredientRow[];
+    if (newRows.length > 0) setRows(newRows);
+    setView('calculator');
+  };
+
+  // Show landing page
+  if (view === 'selector') {
+    return (
+      <IceCreamTypeSelector
+        categories={iceCreamCategories}
+        onSelectCategory={handleSelectCategory}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #fef3c7 50%, #fde68a 100%)' }}>
-      {/* Header bar — matches pie/cake/cookie apps */}
-      <header className="text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #0e7490, #0891b2, #38bdf8)' }}>
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen p-4 md:p-8" style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #fef3c7 50%, #fde68a 100%)' }}>
+      {/* Header bar matching IceCreamTypeSelector */}
+      <div className="text-white shadow-lg rounded-2xl mb-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0e7490, #0891b2, #38bdf8)' }}>
+        <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <IceCream className="w-8 h-8 text-white" />
+            <button
+              onClick={() => setView('selector')}
+              className="flex items-center gap-1 text-cyan-100 hover:text-white text-sm mr-2 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <span className="text-3xl">🍦</span>
             <div>
-              <h1 className="text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Ice Cream Sensei</h1>
-              <p className="text-white/70 text-xs">Mix Calculator</p>
+              <h1 className="text-2xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>
+                {selectedCategory ? selectedCategory.name : 'Ice Cream'} — Mix Calculator
+              </h1>
+              <p className="text-cyan-100 text-sm">
+                {selectedRecipe ? selectedRecipe.name : 'Custom mix'} · edit ingredients below
+              </p>
             </div>
           </div>
         </div>
-      </header>
-      <div className="max-w-6xl mx-auto space-y-6 p-4 md:p-8">
-        {/* Subheader */}
-        <div className="text-center space-y-1">
-          <p className="text-gray-600 text-sm">Pick ingredients. The mix analysis updates automatically.</p>
-        </div>
+      </div>
+      <div className="max-w-6xl mx-auto space-y-6">
+
+        {/* Recipe selector row */}
+        {selectedCategory && selectedCategory.recipes.length > 1 && (
+          <div className="bg-white rounded-2xl shadow-sm px-5 py-3 flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-semibold text-gray-600">Recipe:</span>
+            <div className="flex flex-wrap gap-2">
+              {selectedCategory.recipes.map(recipe => (
+                <button
+                  key={recipe.id}
+                  onClick={() => {
+                    setSelectedRecipe(recipe);
+                    const newRows: IngredientRow[] = recipe.ingredients
+                      .map(ing => {
+                        const key = RECIPE_INGREDIENT_MAP[ing.name];
+                        if (!key) return null;
+                        const profile = customIngredients[key];
+                        if (!profile) return null;
+                        return { key, grams: ing.amount, volumetricUnit: profile.volumetricUnit ?? 'cup' } as IngredientRow;
+                      })
+                      .filter(Boolean) as IngredientRow[];
+                    if (newRows.length > 0) setRows(newRows);
+                  }}
+                  className={`text-sm px-3 py-1.5 rounded-full font-medium transition-colors ${
+                    selectedRecipe?.id === recipe.id
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700'
+                  }`}
+                >
+                  {recipe.emoji} {recipe.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Total Mass Card */}
-        <Card className="bg-white rounded-2xl shadow-md">
+        <Card className="bg-white rounded-2xl shadow-md border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -864,7 +992,7 @@ export default function App() {
                   ingredients={customIngredients}
                   onLoadRecipe={loadRecipe}
                 />
-                <Button onClick={addRow} className="gap-2 bg-amber-600 hover:bg-amber-700 text-white">
+                <Button onClick={addRow} className="gap-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
                   <Plus className="w-4 h-4" />
                   Add Ingredient
                 </Button>
@@ -878,7 +1006,7 @@ export default function App() {
         </Card>
 
         {/* Ingredients Table */}
-        <Card className="bg-white rounded-2xl shadow-md">
+        <Card className="bg-white rounded-2xl shadow-md border-0">
           <CardHeader>
             <CardTitle>Ingredients</CardTitle>
             <CardDescription>Add and adjust ingredients for your ice cream mix</CardDescription>
@@ -890,7 +1018,7 @@ export default function App() {
                 return (
                   <div
                     key={index}
-                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-amber-300 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
                   >
                     <div className="flex-1 min-w-0 sm:min-w-[200px]">
                       <Select value={row.key} onValueChange={(value) => updateRow(index, 'key', value)}>
@@ -1067,7 +1195,7 @@ export default function App() {
         </Card>
 
         {/* Results */}
-        <Card className="bg-white rounded-2xl shadow-md">
+        <Card className="bg-white rounded-2xl shadow-md border-0">
           <CardHeader>
             <CardTitle>Results</CardTitle>
             <CardDescription>Mix composition analysis</CardDescription>
@@ -1103,7 +1231,7 @@ export default function App() {
                 <div className="text-xs mt-1 opacity-70">Target: 36–40%</div>
               </div>
 
-              <div className="p-4 rounded-lg border-2 bg-cyan-500/10 text-cyan-700 border-cyan-200">
+              <div className="p-4 rounded-lg border-2 bg-blue-500/10 text-blue-700 border-blue-200">
                 <div className="text-lg font-bold">
                   POD {results.POD.toFixed(1)} / PAC {results.PAC.toFixed(1)}
                 </div>
@@ -1141,7 +1269,7 @@ export default function App() {
         </Card>
 
         {/* Nutrition Facts */}
-        <Card className="bg-white rounded-2xl shadow-md">
+        <Card className="bg-white rounded-2xl shadow-md border-0">
           <CardHeader>
             <CardTitle>Nutrition Facts</CardTitle>
             <CardDescription>Total grams of each component in your mix</CardDescription>
@@ -1178,7 +1306,7 @@ export default function App() {
         />
 
         {/* Footer Note */}
-        <Card className="bg-white rounded-2xl shadow-sm">
+        <Card className="bg-white rounded-2xl shadow-sm border-0">
           <CardContent className="pt-6">
             <p className="text-sm text-gray-600">
               <span className="font-semibold">Note:</span> These are engineering defaults. Brands vary. 
