@@ -631,23 +631,27 @@ export default function App() {
   const categoryOrder = ['Dairy', 'Milk solids', 'Sweetener', 'Fruit', 'Chocolate', 'Mix-ins', 'Protein powder', 'Nuts/Seeds', 'Emulsifier', 'Stabilizer/Mix', 'Oils/Fats', 'Flavoring', 'Water', 'Other solids'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-3">
-            <IceCream className="w-10 h-10 text-pink-500" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-              Ice Cream Mix Calculator
-            </h1>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #fef3c7 50%, #fde68a 100%)' }}>
+      {/* Header bar — matches pie/cake/cookie apps */}
+      <header className="text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #0e7490, #0891b2, #38bdf8)' }}>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <IceCream className="w-8 h-8 text-white" />
+            <div>
+              <h1 className="text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Ice Cream Sensei</h1>
+              <p className="text-white/70 text-xs">Mix Calculator</p>
+            </div>
           </div>
-          <p className="text-gray-600">
-            Pick ingredients. The mix analysis updates automatically.
-          </p>
+        </div>
+      </header>
+      <div className="max-w-6xl mx-auto space-y-6 p-4 md:p-8">
+        {/* Subheader */}
+        <div className="text-center space-y-1">
+          <p className="text-gray-600 text-sm">Pick ingredients. The mix analysis updates automatically.</p>
         </div>
 
         {/* Total Mass Card */}
-        <Card className="bg-white/80 backdrop-blur border-2 shadow-lg">
+        <Card className="bg-white rounded-2xl shadow-md">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -860,7 +864,7 @@ export default function App() {
                   ingredients={customIngredients}
                   onLoadRecipe={loadRecipe}
                 />
-                <Button onClick={addRow} className="gap-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
+                <Button onClick={addRow} className="gap-2 bg-amber-600 hover:bg-amber-700 text-white">
                   <Plus className="w-4 h-4" />
                   Add Ingredient
                 </Button>
@@ -874,7 +878,7 @@ export default function App() {
         </Card>
 
         {/* Ingredients Table */}
-        <Card className="bg-white/80 backdrop-blur border-2 shadow-lg">
+        <Card className="bg-white rounded-2xl shadow-md">
           <CardHeader>
             <CardTitle>Ingredients</CardTitle>
             <CardDescription>Add and adjust ingredients for your ice cream mix</CardDescription>
@@ -886,7 +890,7 @@ export default function App() {
                 return (
                   <div
                     key={index}
-                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-amber-300 transition-colors"
                   >
                     <div className="flex-1 min-w-0 sm:min-w-[200px]">
                       <Select value={row.key} onValueChange={(value) => updateRow(index, 'key', value)}>
@@ -1063,7 +1067,7 @@ export default function App() {
         </Card>
 
         {/* Results */}
-        <Card className="bg-white/80 backdrop-blur border-2 shadow-lg">
+        <Card className="bg-white rounded-2xl shadow-md">
           <CardHeader>
             <CardTitle>Results</CardTitle>
             <CardDescription>Mix composition analysis</CardDescription>
@@ -1099,7 +1103,7 @@ export default function App() {
                 <div className="text-xs mt-1 opacity-70">Target: 36–40%</div>
               </div>
 
-              <div className="p-4 rounded-lg border-2 bg-blue-500/10 text-blue-700 border-blue-200">
+              <div className="p-4 rounded-lg border-2 bg-cyan-500/10 text-cyan-700 border-cyan-200">
                 <div className="text-lg font-bold">
                   POD {results.POD.toFixed(1)} / PAC {results.PAC.toFixed(1)}
                 </div>
@@ -1137,7 +1141,7 @@ export default function App() {
         </Card>
 
         {/* Nutrition Facts */}
-        <Card className="bg-white/80 backdrop-blur border-2 shadow-lg">
+        <Card className="bg-white rounded-2xl shadow-md">
           <CardHeader>
             <CardTitle>Nutrition Facts</CardTitle>
             <CardDescription>Total grams of each component in your mix</CardDescription>
@@ -1174,7 +1178,7 @@ export default function App() {
         />
 
         {/* Footer Note */}
-        <Card className="bg-white/60 backdrop-blur border-2">
+        <Card className="bg-white rounded-2xl shadow-sm">
           <CardContent className="pt-6">
             <p className="text-sm text-gray-600">
               <span className="font-semibold">Note:</span> These are engineering defaults. Brands vary. 

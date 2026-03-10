@@ -38,9 +38,9 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
     const distance = Math.abs(normalizedValue - normalizedBaseline);
     
     if (distance < 0.15) return 'bg-green-500';
-    if (distance < 0.30) return 'bg-blue-500';
-    if (distance < 0.50) return 'bg-purple-500';
-    return 'bg-pink-500';
+    if (distance < 0.30) return 'bg-cyan-500';
+    if (distance < 0.50) return 'bg-amber-500';
+    return 'bg-teal-500';
   };
 
   const Scale = ({ 
@@ -75,7 +75,7 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
             <h3 className="text-xl font-bold text-gray-900">{label}</h3>
             <p className="text-sm text-gray-600">{description}</p>
           </div>
-          <div className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+          <div className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
             {value.toFixed(1)}
           </div>
         </div>
@@ -83,7 +83,7 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
         {/* Scale container */}
         <div className="relative pt-10">
           {/* Scale bar background */}
-          <div className="h-12 bg-gradient-to-r from-blue-100 via-green-100 to-purple-100 rounded-lg border-2 border-gray-300 relative overflow-visible">
+          <div className="h-12 bg-gradient-to-r from-cyan-100 via-amber-100 to-teal-100 rounded-lg border-2 border-gray-300 relative overflow-visible">
             {/* Sucrose baseline marker */}
             <div 
               className="absolute -top-8 bottom-0 w-0.5 bg-gray-400 z-10"
@@ -166,7 +166,7 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
         />
         
         {/* Info box */}
-        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-purple-200">
+        <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-cyan-50 rounded-lg border border-amber-200">
           <p className="text-sm font-semibold text-gray-700 mb-2">
             📖 Understanding POD & PAC
           </p>
