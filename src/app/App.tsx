@@ -601,9 +601,17 @@ export default function App() {
       return gramsToOunces(grams).toFixed(2);
     } else if (unitSystem === 'volumetric' && ingredientKey) {
       const vol = gramsToVolumetric(grams, ingredientKey, rowUnit);
-      return vol.formatted; // e.g. "½ cup", "2 tbsp", "¼ tsp"
+      // Return raw cups number for the <input type="number"> field
+      return vol.value.toFixed(3);
     }
     return grams.toFixed(1);
+  };
+  
+  // Returns the human-friendly volumetric label shown next to the input (e.g. "½ cup", "2 tbsp")
+  const formatVolumetricLabel = (grams: number, ingredientKey?: string, rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz'): string => {
+    if (!ingredientKey) return '';
+    const vol = gramsToVolumetric(grams, ingredientKey, rowUnit);
+    return vol.formatted;
   };
   
   const getUnitLabel = (ingredientKey?: string, _rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz', eggSize?: 'small' | 'medium' | 'large' | 'extra-large') => {
@@ -1104,38 +1112,20 @@ export default function App() {
                           <Input
                             type="number"
                             min="0"
-                            step="0.1"
+                            step={unitSystem === 'volumetric' ? '0.125' : '0.1'}
                             value={formatAmount(row.grams, row.key, row.volumetricUnit, row.eggSize)}
                             onChange={(e) => {
                               const inputValue = Number(e.target.value);
                               let gramsValue = inputValue;
                               
-                              // Convert volumetric to grams if in volumetric mode
+                              // In volumetric mode the input value is always in cups
                               if (unitSystem === 'volumetric' && row.key) {
                                 const ing = customIngredients[row.key];
                                 if (ing) {
                                   const density = ing.density || 1.0;
-                                  const unit = row.volumetricUnit || ing.volumetricUnit;
-                                  let mL = 0;
-                                  
-                                  switch (unit) {
-                                    case 'cup':
-                                      mL = inputValue * 236.588;
-                                      break;
-                                    case 'tbsp':
-                                      mL = inputValue * 14.787;
-                                      break;
-                                    case 'tsp':
-                                      mL = inputValue * 4.929;
-                                      break;
-                                    case 'fl oz':
-                                      mL = inputValue * 29.574;
-                                      break;
-                                  }
-                                  gramsValue = mL * density;
+                                  gramsValue = inputValue * 236.588 * density;
                                 }
                               } else if (unitSystem === 'imperial') {
-                                // Convert ounces to grams
                                 gramsValue = inputValue * 28.3495;
                               }
                               
@@ -1145,9 +1135,14 @@ export default function App() {
                             placeholder="0"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
-                            {getUnitLabel(row.key, row.volumetricUnit, row.eggSize)}
+                            {unitSystem === 'volumetric' ? 'c' : getUnitLabel(row.key, row.volumetricUnit, row.eggSize)}
                           </span>
                         </div>
+                        {unitSystem === 'volumetric' && row.key && row.grams > 0 && (
+                          <div className="text-xs text-cyan-700 font-semibold mt-1 text-center">
+                            {formatVolumetricLabel(row.grams, row.key, row.volumetricUnit)}
+                          </div>
+                        )}
                       </div>
                       )}
 
