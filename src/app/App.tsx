@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from './components/ui/label';
 import { NutritionFacts } from './components/NutritionFacts';
 import { PODPACScales } from './components/PODPACScales';
+import { PrintRecipeCard } from './components/PrintRecipeCard';
 
 
 // Ingredient composition fractions by weight (0-1)
@@ -739,6 +740,17 @@ export default function App() {
               </p>
             </div>
           </div>
+          <PrintRecipeCard
+            recipeName={selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
+            categoryName={selectedCategory ? selectedCategory.name : 'Ice Cream'}
+            rows={rows.map(r => ({
+              label: customIngredients[r.key]?.label ?? r.key,
+              grams: r.grams,
+              category: customIngredients[r.key]?.category ?? '',
+            }))}
+            results={results}
+            unitSystem={unitSystem}
+          />
         </div>
       </div>
       <div className="max-w-6xl mx-auto space-y-6">
