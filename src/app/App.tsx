@@ -541,28 +541,50 @@ export default function App() {
   const gramsToOunces = (grams: number) => grams / 28.3495;
   
   // Volumetric conversions (density-based) - uses per-row unit selection
-  const gramsToVolumetric = (grams: number, ingredientKey: string, rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz') => {
-    const ing = customIngredients[ingredientKey];
-    if (!ing) return { value: grams, unit: 'g' };
-    
-    const density = ing.density || 1.0;
-    const mL = grams / density;
-    
-    // Use the row's selected unit, or fall back to ingredient's default
-    const unit = rowUnit || ing.volumetricUnit;
-    
-    switch (unit) {
-      case 'cup':
-        return { value: mL / 236.588, unit: 'cup' };
-      case 'tbsp':
-        return { value: mL / 14.787, unit: 'tbsp' };
-      case 'tsp':
-        return { value: mL / 4.929, unit: 'tsp' };
-      case 'fl oz':
-        return { value: mL / 29.574, unit: 'fl oz' };
-      default:
-        return { value: grams, unit: 'g' };
+  // ── Volumetric helpers (pie-app style: snap to clean fractions, fall back to tbsp/tsp) ──
+  const FRACS = [
+    {v:0,s:''},{v:1/8,s:'⅛'},{v:1/4,s:'¼'},{v:1/3,s:'⅓'},{v:3/8,s:'⅜'},
+    {v:1/2,s:'½'},{v:5/8,s:'⅝'},{v:2/3,s:'⅔'},{v:3/4,s:'¾'},{v:7/8,s:'⅞'},{v:1,s:''},
+  ];
+  const snapFrac = (x: number) => {
+    let b=FRACS[0], bd=Math.abs(x-0);
+    for(const f of FRACS){const d=Math.abs(x-f.v);if(d<bd){bd=d;b=f;}}
+    return b.v===1?{whole:1,fracStr:''}:{whole:0,fracStr:b.s};
+  };
+  const formatCupsStr = (cups: number): string => {
+    if(cups<=0) return '0 tsp';
+    if(cups>=0.25){
+      const w=Math.floor(cups);
+      const{whole:fw,fracStr}=snapFrac(cups-w);
+      const t=w+fw;
+      const cs=t>0?`${t}${fracStr} cup${t>1?'s':''}`:fracStr?`${fracStr} cup`:'';
+      if(!fracStr&&cups-w>0.01){
+        const tbr=(cups-w)*16; const wt=Math.floor(tbr);
+        const{whole:ttw,fracStr:tf}=snapFrac(tbr-wt); const tt=wt+ttw;
+        const ts=tt>0?`${tt}${tf} tbsp`:tf?`${tf} tbsp`:'';
+        return cs&&ts?`${cs} + ${ts}`:cs||ts||'0 tsp';
+      }
+      return cs||'0 tsp';
     }
+    const tbsp=cups*16;
+    if(tbsp>=1){
+      const w=Math.floor(tbsp);
+      const{whole:fw,fracStr}=snapFrac(tbsp-w);
+      const t=w+fw;
+      return t>0?`${t}${fracStr} tbsp`:fracStr?`${fracStr} tbsp`:'0 tsp';
+    }
+    const tsp=cups*48;
+    const w=Math.floor(tsp);
+    const{whole:fw,fracStr}=snapFrac(tsp-w);
+    const t=w+fw;
+    return t>0?`${t}${fracStr} tsp`:fracStr?`${fracStr} tsp`:'¼ tsp';
+  };
+  const gramsToVolumetric = (grams: number, ingredientKey: string, _rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz') => {
+    const ing = customIngredients[ingredientKey];
+    if (!ing) return { value: grams, unit: 'g', formatted: `${grams.toFixed(1)} g` };
+    const density = ing.density || 1.0;
+    const cups = grams / (density * 236.588);
+    return { value: cups, unit: 'cups', formatted: formatCupsStr(cups) };
   };
   
   const formatAmount = (grams: number, ingredientKey?: string, rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz', eggSize?: 'small' | 'medium' | 'large' | 'extra-large') => {
@@ -579,23 +601,19 @@ export default function App() {
       return gramsToOunces(grams).toFixed(2);
     } else if (unitSystem === 'volumetric' && ingredientKey) {
       const vol = gramsToVolumetric(grams, ingredientKey, rowUnit);
-      return vol.value.toFixed(2);
+      return vol.formatted; // e.g. "½ cup", "2 tbsp", "¼ tsp"
     }
     return grams.toFixed(1);
   };
   
-  const getUnitLabel = (ingredientKey?: string, rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz', eggSize?: 'small' | 'medium' | 'large' | 'extra-large') => {
+  const getUnitLabel = (ingredientKey?: string, _rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz', eggSize?: 'small' | 'medium' | 'large' | 'extra-large') => {
     // Check if this is an egg ingredient
     if (ingredientKey && (ingredientKey === 'egg_yolk' || ingredientKey === 'whole_egg') && eggSize) {
       return eggSize;
     }
-    
     if (unitSystem === 'metric') return 'g';
     if (unitSystem === 'imperial') return 'oz';
-    if (unitSystem === 'volumetric' && ingredientKey) {
-      const ing = customIngredients[ingredientKey];
-      return rowUnit || ing?.volumetricUnit || 'cup';
-    }
+    if (unitSystem === 'volumetric') return ''; // unit is embedded in the formatted string
     return 'g';
   };
 
