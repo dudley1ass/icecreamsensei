@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, RotateCcw, X, IceCream, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles, ArrowLeft } from 'lucide-react';
+import { Plus, RotateCcw, X, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles, ArrowLeft } from 'lucide-react';
 import { IceCreamTypeSelector } from './components/IceCreamTypeSelector';
 import { iceCreamCategories, IceCreamCategory, IceCreamRecipe } from './types/iceCreamTypes';
 import { Button } from './components/ui/button';
@@ -459,7 +459,7 @@ export default function App() {
       const isEgg = value === 'egg_yolk' || value === 'whole_egg';
       newRows[index] = { 
         ...newRows[index], 
-        [field]: value, 
+        [field]: value as string, 
         volumetricUnit: ingredient.volumetricUnit,
         eggSize: isEgg ? 'large' : undefined,
       };
@@ -538,7 +538,6 @@ export default function App() {
   
   // Unit conversion functions
   const gramsToOunces = (grams: number) => grams / 28.3495;
-  const ouncesToGrams = (ounces: number) => ounces * 28.3495;
   
   // Volumetric conversions (density-based) - uses per-row unit selection
   const gramsToVolumetric = (grams: number, ingredientKey: string, rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz') => {
@@ -1021,7 +1020,7 @@ export default function App() {
                     className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
                   >
                     <div className="flex-1 min-w-0 sm:min-w-[200px]">
-                      <Select value={row.key} onValueChange={(value) => updateRow(index, 'key', value)}>
+                      <Select value={row.key} onValueChange={(value: string) => updateRow(index, 'key', value)}>
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
@@ -1130,7 +1129,7 @@ export default function App() {
                         <div className="w-32">
                         <Select 
                           value={row.eggSize || 'large'} 
-                          onValueChange={(value) => updateRow(index, 'eggSize', value)}
+                          onValueChange={(value: string) => updateRow(index, 'eggSize', value)}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue />
@@ -1150,7 +1149,7 @@ export default function App() {
                         <div className="w-24">
                           <Select 
                             value={row.volumetricUnit || ingredient.volumetricUnit} 
-                            onValueChange={(value) => updateRow(index, 'volumetricUnit', value as 'cup' | 'tbsp' | 'tsp' | 'fl oz')}
+                            onValueChange={(value: string) => updateRow(index, 'volumetricUnit', value as 'cup' | 'tbsp' | 'tsp' | 'fl oz')}
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue />

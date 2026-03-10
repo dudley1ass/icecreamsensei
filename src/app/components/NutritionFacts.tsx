@@ -27,8 +27,8 @@ export function NutritionFacts({
   fatGrams,
   sugarGrams,
   msnfGrams,
-  waterGrams,
-  otherSolidsGrams,
+  waterGrams: _waterGrams,
+  otherSolidsGrams: _otherSolidsGrams,
   proteinGrams,
   saturatedFatGrams,
   transFatGrams,
@@ -80,7 +80,7 @@ export function NutritionFacts({
   
   // Calculate nutrition for one serving
   const servingFat = fatGrams * servingMultiplier;
-  const servingSugar = sugarGrams * servingMultiplier;
+  const _servingSugar = sugarGrams * servingMultiplier;
   const servingProtein = proteinGrams * servingMultiplier;
   // Total Carbs = Added sugars + Lactose (from milk) + Fiber
   // Note: other_solids contains protein, cocoa solids, minerals, etc. - not all are carbs
