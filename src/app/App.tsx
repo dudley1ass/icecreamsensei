@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, RotateCcw, X, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles, ArrowLeft, Printer } from 'lucide-react';
 import { IceCreamTypeSelector } from './components/IceCreamTypeSelector';
 import { iceCreamCategories, IceCreamCategory, IceCreamRecipe } from './types/iceCreamTypes';
@@ -10,7 +10,9 @@ import { Input } from './components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './components/ui/dialog';
 import { Label } from './components/ui/label';
 import { NutritionFacts } from './components/NutritionFacts';
-import { PODPACScales } from './components/PODPACScales';
+import { IceCreamSciencePanel } from './components/IceCreamSciencePanel';
+import { ChurningInstructions } from './components/ChurningInstructions';
+import { computeIceCreamTaste } from './utils/iceCreamTastePrediction';
 // Ingredient composition fractions by weight (0-1)
 interface IngredientProfile {
   label: string;
@@ -307,6 +309,8 @@ export default function App() {
     volumetricUnit: 'cup' as 'cup' | 'tbsp' | 'tsp',
   });
   
+  const [activeTab, setActiveTab] = useState<'science' | 'nutrition' | 'churning'>('science');
+
   const [rows, setRows] = useState<IngredientRow[]>([
     { key: 'whole_milk', grams: 500, volumetricUnit: 'cup' },
     { key: 'heavy_cream_36', grams: 300, volumetricUnit: 'cup' },
@@ -344,6 +348,18 @@ export default function App() {
     ironMg: 0,
     potassiumMg: 0,
   });
+
+  const taste = useMemo(
+    () =>
+      computeIceCreamTaste(
+        rows.map((r) => ({ key: r.key, grams: r.grams })),
+        Object.fromEntries(
+          Object.entries(customIngredients).map(([key, p]) => [key, { category: p.category, label: p.label }]),
+        ),
+        results.sugarPct,
+      ),
+    [rows, customIngredients, results.sugarPct],
+  );
 
   useEffect(() => {
     calculateResults();
@@ -802,9 +818,9 @@ export default function App() {
       </header>
 
       <main className="app-print-main max-w-6xl mx-auto">
-        <div className="flex flex-col gap-6 print-two-page-root">
-          {/* Page 1 — recipe + mix (print:break-after-page) */}
-          <div className="space-y-6 print-page-1 print:break-after-page">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-two-page-root items-start">
+          {/* Left column: formula (print page 1) */}
+          <div className="space-y-4 lg:space-y-5 print-page-1 print:break-after-page print:order-1">
             <div className="hidden print:block border-b-2 border-gray-800 pb-4 mb-2">
               <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
                 🍦 {selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
@@ -854,8 +870,8 @@ export default function App() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <div className="text-4xl font-bold text-gray-900">
-                  {formatTotalMass(results.mass).value} <span className="text-2xl text-gray-500">{formatTotalMass(results.mass).unit}</span>
+                <div className="text-3xl sm:text-4xl font-bold text-gray-900">
+                  {formatTotalMass(results.mass).value} <span className="text-xl sm:text-2xl text-gray-500">{formatTotalMass(results.mass).unit}</span>
                 </div>
                 <div className="text-sm text-gray-500 mt-1">Total mix {unitSystem === 'volumetric' ? 'volume' : 'mass'}</div>
               </div>
@@ -1283,86 +1299,6 @@ export default function App() {
           </CardContent>
         </Card>
 
-        {/* Results */}
-        <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
-          <CardHeader>
-            <CardTitle>Results</CardTitle>
-            <CardDescription className="print:hidden">Mix composition analysis</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.fatPct, 12, 16)}`}>
-                <div className="text-3xl font-bold">{results.fatPct.toFixed(2)}%</div>
-                <div className="text-sm mt-1">Fat</div>
-                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 12–16%</div>
-              </div>
-
-              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.sugarPct, 14, 16)}`}>
-                <div className="text-3xl font-bold">{results.sugarPct.toFixed(2)}%</div>
-                <div className="text-sm mt-1">Sugar solids</div>
-                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 14–16%</div>
-              </div>
-
-              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.msnfPct, 9, 11)}`}>
-                <div className="text-3xl font-bold">{results.msnfPct.toFixed(2)}%</div>
-                <div className="text-sm mt-1">MSNF</div>
-                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 9–11%</div>
-              </div>
-
-              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.waterPct, 0, 100)}`}>
-                <div className="text-3xl font-bold">{results.waterPct.toFixed(2)}%</div>
-                <div className="text-sm mt-1">Water</div>
-              </div>
-
-              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.totalSolidsPct, 36, 40)}`}>
-                <div className="text-3xl font-bold">{results.totalSolidsPct.toFixed(2)}%</div>
-                <div className="text-sm mt-1">Total solids</div>
-                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 36–40%</div>
-              </div>
-
-              <div className="p-4 rounded-lg border-2 bg-blue-500/10 text-blue-700 border-blue-200 print:!border-gray-500 print:!bg-white print:!text-gray-900">
-                <div className="text-lg font-bold">
-                  POD {results.POD.toFixed(1)} / PAC {results.PAC.toFixed(1)}
-                </div>
-                <div className="text-xs mt-1">Sweetness / Softness</div>
-                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Relative to sucrose</div>
-              </div>
-            </div>
-
-            {results.flags.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-gray-700">⚠️ Warnings</h4>
-                <div className="flex flex-wrap gap-2">
-                  {results.flags.map((flag, i) => (
-                    <Badge key={i} variant="outline" className="bg-amber-50 text-amber-800 border-amber-300">
-                      {flag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-2">
-              <p className="text-sm font-semibold text-gray-700">
-                📊 Typical premium targets
-              </p>
-              <p className="text-sm text-gray-600">
-                Fat 12–16% • Sugar 14–16% • MSNF 9–11% • Total solids 36–40%
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                POD = sweetness (sucrose=1). PAC = freezing point depression / softness (sucrose=1). 
-                Higher PAC → softer at freezer temps.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* POD/PAC Scales */}
-        <PODPACScales
-          POD={results.POD}
-          PAC={results.PAC}
-        />
-
         {/* Footer Note */}
         <Card className="print-clean-panel bg-white rounded-2xl shadow-sm border-0">
           <CardContent className="pt-6">
@@ -1372,48 +1308,112 @@ export default function App() {
             </p>
           </CardContent>
         </Card>
+
+            <div className="hidden print:block">
+              <ChurningInstructions
+                compact
+                categoryName={selectedCategory?.name}
+                scienceNote={selectedCategory?.scienceNote}
+                techniqueTip={selectedRecipe?.techniqueTip}
+                recipeName={selectedRecipe?.name}
+              />
+            </div>
           </div>
 
-          {/* Page 2 — nutrition only (matches cake app print layout) */}
-          <div className="print-page-2 print:break-before-page space-y-6">
-            <div className="hidden print:block border-b-2 border-gray-800 pb-3 mb-2">
-              <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
-                Nutrition Facts
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
-                {selectedCategory ? ` · ${selectedCategory.name}` : ''}
-              </p>
+          {/* Right column: Science / Nutrition / Churning (print page 2) */}
+          <div className="print-page-2 print:break-before-page print:order-2 space-y-4">
+            <div className="flex bg-white rounded-xl shadow-sm p-1 print:hidden">
+              {(
+                [
+                  ['science', '🔬 Science'],
+                  ['nutrition', '📋 Nutrition'],
+                  ['churning', '🌀 Churning'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setActiveTab(id)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all sm:text-sm ${
+                    activeTab === id ? 'text-white shadow' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                  style={
+                    activeTab === id
+                      ? { background: 'linear-gradient(135deg, #c0392b, #e67e22)' }
+                      : undefined
+                  }
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
-              <CardHeader className="print:hidden">
-                <CardTitle>Nutrition Facts</CardTitle>
-                <CardDescription>Total grams of each component in your mix</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <NutritionFacts
-                  mass={results.mass}
-                  fatGrams={results.fatGrams}
-                  sugarGrams={results.sugarGrams}
-                  msnfGrams={results.msnfGrams}
-                  waterGrams={results.waterGrams}
-                  otherSolidsGrams={results.otherSolidsGrams}
-                  proteinGrams={results.proteinGrams}
-                  saturatedFatGrams={results.saturatedFatGrams}
-                  transFatGrams={results.transFatGrams}
-                  cholesterolMg={results.cholesterolMg}
-                  sodiumMg={results.sodiumMg}
-                  totalCalories={results.totalCalories}
-                  fiberGrams={results.fiberGrams}
-                  vitaminDMcg={results.vitaminDMcg}
-                  calciumMg={results.calciumMg}
-                  ironMg={results.ironMg}
-                  potassiumMg={results.potassiumMg}
-                  unitSystem={unitSystem}
-                  totalVolumeML={calculateTotalVolumeML()}
-                />
-              </CardContent>
-            </Card>
+
+            <div className={`${activeTab === 'science' ? 'block' : 'hidden'} print:block print:order-2`}>
+              <IceCreamSciencePanel
+                taste={taste}
+                results={{
+                  fatPct: results.fatPct,
+                  sugarPct: results.sugarPct,
+                  msnfPct: results.msnfPct,
+                  waterPct: results.waterPct,
+                  totalSolidsPct: results.totalSolidsPct,
+                  POD: results.POD,
+                  PAC: results.PAC,
+                  flags: results.flags,
+                }}
+                getStatusColor={getStatusColor}
+              />
+            </div>
+
+            <div className={`${activeTab === 'nutrition' ? 'block' : 'hidden'} print:block print:order-1`}>
+              <div className="hidden print:block border-b-2 border-gray-800 pb-3 mb-2">
+                <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+                  Nutrition Facts
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
+                  {selectedCategory ? ` · ${selectedCategory.name}` : ''}
+                </p>
+              </div>
+              <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
+                <CardHeader className="print:hidden">
+                  <CardTitle>Nutrition Facts</CardTitle>
+                  <CardDescription>Total grams of each component in your mix</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <NutritionFacts
+                    mass={results.mass}
+                    fatGrams={results.fatGrams}
+                    sugarGrams={results.sugarGrams}
+                    msnfGrams={results.msnfGrams}
+                    waterGrams={results.waterGrams}
+                    otherSolidsGrams={results.otherSolidsGrams}
+                    proteinGrams={results.proteinGrams}
+                    saturatedFatGrams={results.saturatedFatGrams}
+                    transFatGrams={results.transFatGrams}
+                    cholesterolMg={results.cholesterolMg}
+                    sodiumMg={results.sodiumMg}
+                    totalCalories={results.totalCalories}
+                    fiberGrams={results.fiberGrams}
+                    vitaminDMcg={results.vitaminDMcg}
+                    calciumMg={results.calciumMg}
+                    ironMg={results.ironMg}
+                    potassiumMg={results.potassiumMg}
+                    unitSystem={unitSystem}
+                    totalVolumeML={calculateTotalVolumeML()}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className={`${activeTab === 'churning' ? 'block' : 'hidden'} print:hidden`}>
+              <ChurningInstructions
+                categoryName={selectedCategory?.name}
+                scienceNote={selectedCategory?.scienceNote}
+                techniqueTip={selectedRecipe?.techniqueTip}
+                recipeName={selectedRecipe?.name}
+              />
+            </div>
           </div>
         </div>
       </main>

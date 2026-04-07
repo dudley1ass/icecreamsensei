@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 interface PODPACScalesProps {
   POD: number;
   PAC: number;
+  /** Narrower, shorter scales for side-column layout */
+  compact?: boolean;
 }
 
-export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
+export function PODPACScales({ POD, PAC, compact = false }: PODPACScalesProps) {
   // Define realistic POD range for ice cream (based on common sweeteners)
   // Dextrose is ~0.70 (low), Fructose is ~1.70 (high)
   const POD_MIN = 50; // per kg
@@ -68,63 +70,61 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
   }) => {
     const baseline = type === 'POD' ? SUCROSE_POD : SUCROSE_PAC;
     
+    const barH = compact ? 'h-7' : 'h-12';
+    const topPad = compact ? 'pt-6' : 'pt-10';
+    const titleCls = compact ? 'text-sm font-bold' : 'text-xl font-bold';
+    const descCls = compact ? 'text-xs text-gray-600' : 'text-sm text-gray-600';
+    const valCls = compact
+      ? 'text-lg font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent'
+      : 'text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent';
+    const bubbleCls = compact
+      ? 'px-2 py-0.5 rounded-full font-bold text-white text-xs whitespace-nowrap shadow mb-0.5'
+      : 'px-3 py-1 rounded-full font-bold text-white text-lg whitespace-nowrap shadow-lg mb-1';
+
     return (
-      <div className="space-y-3">
-        <div className="flex justify-between items-baseline">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">{label}</h3>
-            <p className="text-sm text-gray-600">{description}</p>
+      <div className={compact ? 'space-y-2' : 'space-y-3'}>
+        <div className="flex justify-between items-baseline gap-2">
+          <div className="min-w-0">
+            <h3 className={`text-gray-900 ${titleCls}`}>{label}</h3>
+            <p className={descCls}>{description}</p>
           </div>
-          <div className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-teal-600 bg-clip-text text-transparent">
+          <div className={`shrink-0 ${valCls}`}>
             {value.toFixed(1)}
           </div>
         </div>
         
-        {/* Scale container */}
-        <div className="relative pt-10">
-          {/* Scale bar background */}
-          <div className="h-12 bg-gradient-to-r from-cyan-100 via-amber-100 to-teal-100 rounded-lg border-2 border-gray-300 relative overflow-visible">
-            {/* Sucrose baseline marker */}
+        <div className={`relative ${topPad}`}>
+          <div className={`${barH} bg-gradient-to-r from-cyan-100 via-amber-100 to-teal-100 rounded-lg border border-gray-300 relative overflow-visible`}>
             <div 
-              className="absolute -top-8 bottom-0 w-0.5 bg-gray-400 z-10"
+              className="absolute -top-6 bottom-0 w-0.5 bg-gray-400 z-10"
               style={{ left: `${sucrosePosition}%`, transform: 'translateX(-50%)' }}
             >
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-700 whitespace-nowrap">
-                Sucrose
-              </div>
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
-                ({baseline})
+              <div className={`absolute left-1/2 -translate-x-1/2 font-semibold text-gray-700 whitespace-nowrap ${compact ? '-top-4 text-[10px]' : '-top-6 text-xs'}`}>
+                Sucrose ({baseline})
               </div>
             </div>
             
-            {/* Current value indicator */}
             <div 
               className="absolute top-1/2 -translate-y-1/2 transition-all duration-300 z-20"
               style={{ left: `${position}%`, transform: `translateX(-50%) translateY(-50%)` }}
             >
               <div className="relative flex flex-col items-center">
-                {/* Value label above */}
-                <div className={`px-3 py-1 rounded-full font-bold text-white text-lg whitespace-nowrap shadow-lg mb-1 ${getScaleColor(value, min, max, baseline)}`}>
+                <div className={`${bubbleCls} ${getScaleColor(value, min, max, baseline)}`}>
                   {value.toFixed(1)}
                 </div>
-                {/* Arrow pointing down */}
-                <div className={`w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[14px] ${getScaleColor(value, min, max, baseline)}`} />
+                <div className={`w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[10px] md:border-l-[10px] md:border-r-[10px] md:border-t-[14px] ${getScaleColor(value, min, max, baseline)}`} />
               </div>
             </div>
           </div>
           
-          {/* Scale labels */}
-          <div className="flex justify-between mt-2 text-xs font-semibold text-gray-600">
+          <div className={`flex justify-between mt-1 font-semibold text-gray-600 ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <span>{leftLabel}</span>
             <span>{rightLabel}</span>
           </div>
           
-          {/* Scale numbers */}
-          <div className="flex justify-between mt-1 text-xs text-gray-400">
+          <div className={`flex justify-between mt-0.5 text-gray-400 ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <span>{min}</span>
-            <span>{Math.round((min + max) / 4)}</span>
             <span>{Math.round((min + max) / 2)}</span>
-            <span>{Math.round((3 * max + min) / 4)}</span>
             <span>{max}</span>
           </div>
         </div>
@@ -133,12 +133,14 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
   };
 
   return (
-    <Card className="print-clean-panel bg-white/80 backdrop-blur border-2 shadow-lg">
-      <CardHeader>
-        <CardTitle>POD & PAC Analysis</CardTitle>
-        <CardDescription className="print:hidden">Sweetness and softness relative to sucrose baseline (values per kg)</CardDescription>
+    <Card className={`print-clean-panel bg-white/80 backdrop-blur border-2 shadow-lg ${compact ? 'border shadow-md' : ''}`}>
+      <CardHeader className={compact ? 'py-3 pb-2' : ''}>
+        <CardTitle className={compact ? 'text-base' : ''}>POD & PAC</CardTitle>
+        <CardDescription className={`print:hidden ${compact ? 'text-xs' : ''}`}>
+          Sweetness & softness vs sucrose baseline (per kg mix)
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className={compact ? 'pt-0' : ''}>
         <div className="hidden print:block border border-gray-800 p-4 text-sm space-y-3 mb-0">
           <p className="font-bold text-gray-900">Sweetness & freezing (per kg of mix)</p>
           <p>
@@ -150,7 +152,7 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
             <span className="text-gray-600">— higher PAC → softer at freezer temperature.</span>
           </p>
         </div>
-        <div className="space-y-8 print:hidden">
+        <div className={`print:hidden ${compact ? 'space-y-5' : 'space-y-8'}`}>
         <Scale
           label="POD (Power of Dextrose)"
           value={POD}
