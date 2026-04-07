@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { Plus, RotateCcw, X, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles, ArrowLeft, Printer } from 'lucide-react';
 import { IceCreamTypeSelector } from './components/IceCreamTypeSelector';
 import { iceCreamCategories, IceCreamCategory, IceCreamRecipe } from './types/iceCreamTypes';
@@ -13,6 +13,14 @@ import { NutritionFacts } from './components/NutritionFacts';
 import { IceCreamSciencePanel } from './components/IceCreamSciencePanel';
 import { ChurningInstructions } from './components/ChurningInstructions';
 import { computeIceCreamTaste } from './utils/iceCreamTastePrediction';
+import {
+  iceCreamCalculatorPath,
+  iceCreamHomePath,
+  migrateLegacyHashToPath,
+  parseIceCreamRoute,
+  stripAppPath,
+} from './routing';
+import { applyCalculatorSeo, applyHomeSeo } from './seo';
 // Ingredient composition fractions by weight (0-1)
 interface IngredientProfile {
   label: string;
@@ -280,11 +288,79 @@ const RECIPE_INGREDIENT_MAP: Record<string, string> = {
   'Barista Oat Milk': 'whole_milk',
 };
 
+const DEFAULT_ROWS: IngredientRow[] = [
+  { key: 'whole_milk', grams: 500, volumetricUnit: 'cup' },
+  { key: 'heavy_cream_36', grams: 300, volumetricUnit: 'cup' },
+  { key: 'sucrose', grams: 140, volumetricUnit: 'cup' },
+  { key: 'skim_milk_powder', grams: 40, volumetricUnit: 'tbsp' },
+  { key: 'egg_yolk', grams: 60, eggSize: 'large' },
+];
+
+function rowsFromRecipe(
+  recipe: IceCreamRecipe,
+  ingredients: Record<string, IngredientProfile>
+): IngredientRow[] | null {
+  const newRows: IngredientRow[] = recipe.ingredients
+    .map(ing => {
+      const key = RECIPE_INGREDIENT_MAP[ing.name];
+      if (!key) return null;
+      const profile = ingredients[key];
+      if (!profile) return null;
+      return {
+        key,
+        grams: ing.amount,
+        volumetricUnit: profile.volumetricUnit ?? 'cup',
+      } as IngredientRow;
+    })
+    .filter(Boolean) as IngredientRow[];
+  return newRows.length > 0 ? newRows : null;
+}
+
+function readRouteResolve():
+  | { mode: 'home' }
+  | { mode: 'calc'; category: IceCreamCategory; recipe: IceCreamRecipe } {
+  if (typeof window === 'undefined') return { mode: 'home' };
+  migrateLegacyHashToPath();
+  const appPath = stripAppPath(window.location.pathname);
+  const match = parseIceCreamRoute(appPath);
+  if (!match) return { mode: 'home' };
+  const cat = iceCreamCategories.find(c => c.id === match.categoryId);
+  if (!cat) return { mode: 'home' };
+  const recipe =
+    (match.recipeId ? cat.recipes.find(r => r.id === match.recipeId) : null) ?? cat.recipes[0];
+  if (!recipe) return { mode: 'home' };
+  return { mode: 'calc', category: cat, recipe };
+}
+
+function getInitialAppState(): {
+  view: 'selector' | 'calculator';
+  selectedCategory: IceCreamCategory | null;
+  selectedRecipe: IceCreamRecipe | null;
+  rows: IngredientRow[];
+} {
+  const r = readRouteResolve();
+  if (r.mode === 'home') {
+    return {
+      view: 'selector',
+      selectedCategory: null,
+      selectedRecipe: null,
+      rows: DEFAULT_ROWS,
+    };
+  }
+  return {
+    view: 'calculator',
+    selectedCategory: r.category,
+    selectedRecipe: r.recipe,
+    rows: rowsFromRecipe(r.recipe, INGREDIENTS) ?? DEFAULT_ROWS,
+  };
+}
+
 export default function App() {
+  const initial = getInitialAppState();
   // View: 'selector' = landing page, 'calculator' = mix calculator
-  const [view, setView] = useState<'selector' | 'calculator'>('selector');
-  const [selectedCategory, setSelectedCategory] = useState<IceCreamCategory | null>(null);
-  const [selectedRecipe, setSelectedRecipe] = useState<IceCreamRecipe | null>(null);
+  const [view, setView] = useState<'selector' | 'calculator'>(initial.view);
+  const [selectedCategory, setSelectedCategory] = useState<IceCreamCategory | null>(initial.selectedCategory);
+  const [selectedRecipe, setSelectedRecipe] = useState<IceCreamRecipe | null>(initial.selectedRecipe);
 
   // Unit system: 'metric', 'imperial', or 'volumetric'
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial' | 'volumetric'>('metric');
@@ -311,13 +387,7 @@ export default function App() {
   
   const [activeTab, setActiveTab] = useState<'science' | 'nutrition' | 'churning'>('science');
 
-  const [rows, setRows] = useState<IngredientRow[]>([
-    { key: 'whole_milk', grams: 500, volumetricUnit: 'cup' },
-    { key: 'heavy_cream_36', grams: 300, volumetricUnit: 'cup' },
-    { key: 'sucrose', grams: 140, volumetricUnit: 'cup' },
-    { key: 'skim_milk_powder', grams: 40, volumetricUnit: 'tbsp' },
-    { key: 'egg_yolk', grams: 60, eggSize: 'large' }, // 3 large egg yolks (20g each)
-  ]);
+  const [rows, setRows] = useState<IngredientRow[]>(initial.rows);
 
   const [results, setResults] = useState({
     mass: 0,
@@ -360,6 +430,73 @@ export default function App() {
       ),
     [rows, customIngredients, results.sugarPct],
   );
+
+  useLayoutEffect(() => {
+    const appPath = stripAppPath(window.location.pathname);
+    const match = parseIceCreamRoute(appPath);
+    if (match && !match.recipeId) {
+      const cat = iceCreamCategories.find(c => c.id === match.categoryId);
+      const recipe = cat?.recipes[0];
+      if (cat && recipe) {
+        window.history.replaceState(
+          window.history.state,
+          '',
+          iceCreamCalculatorPath(cat.id, recipe.id),
+        );
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => {
+      const appPath = stripAppPath(window.location.pathname);
+      const match = parseIceCreamRoute(appPath);
+      if (!match) {
+        setView('selector');
+        setSelectedCategory(null);
+        setSelectedRecipe(null);
+        return;
+      }
+      const cat = iceCreamCategories.find(c => c.id === match.categoryId);
+      if (!cat) {
+        setView('selector');
+        setSelectedCategory(null);
+        setSelectedRecipe(null);
+        return;
+      }
+      const recipe =
+        (match.recipeId ? cat.recipes.find(r => r.id === match.recipeId) : null) ??
+        cat.recipes[0];
+      if (!recipe) {
+        setView('selector');
+        setSelectedCategory(null);
+        setSelectedRecipe(null);
+        return;
+      }
+      setView('calculator');
+      setSelectedCategory(cat);
+      setSelectedRecipe(recipe);
+      const nr = rowsFromRecipe(recipe, customIngredients);
+      if (nr) setRows(nr);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [customIngredients]);
+
+  useEffect(() => {
+    if (view === 'selector') {
+      applyHomeSeo(iceCreamHomePath());
+      return;
+    }
+    if (selectedCategory && selectedRecipe) {
+      applyCalculatorSeo({
+        categoryName: selectedCategory.name,
+        recipeEmoji: selectedRecipe.emoji,
+        recipeName: selectedRecipe.name,
+        canonicalPathFromRoot: iceCreamCalculatorPath(selectedCategory.id, selectedRecipe.id),
+      });
+    }
+  }, [view, selectedCategory, selectedRecipe]);
 
   useEffect(() => {
     calculateResults();
@@ -748,22 +885,17 @@ export default function App() {
   const handleSelectCategory = (category: IceCreamCategory, recipe: IceCreamRecipe) => {
     setSelectedCategory(category);
     setSelectedRecipe(recipe);
-    // Pre-load the recipe ingredients into the calculator rows
-    const newRows: IngredientRow[] = recipe.ingredients
-      .map(ing => {
-        const key = RECIPE_INGREDIENT_MAP[ing.name];
-        if (!key) return null;
-        const profile = customIngredients[key];
-        if (!profile) return null;
-        return {
-          key,
-          grams: ing.amount,
-          volumetricUnit: profile.volumetricUnit ?? 'cup',
-        } as IngredientRow;
-      })
-      .filter(Boolean) as IngredientRow[];
-    if (newRows.length > 0) setRows(newRows);
+    const newRows = rowsFromRecipe(recipe, customIngredients);
+    if (newRows) setRows(newRows);
     setView('calculator');
+    window.history.pushState(null, '', iceCreamCalculatorPath(category.id, recipe.id));
+  };
+
+  const goHome = () => {
+    window.history.pushState(null, '', iceCreamHomePath());
+    setView('selector');
+    setSelectedCategory(null);
+    setSelectedRecipe(null);
   };
 
   // Show landing page
@@ -791,7 +923,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setView('selector')}
+              onClick={goHome}
               className="flex items-center gap-1 text-white/80 hover:text-white text-sm mr-2 transition-colors print:hidden"
             >
               <ArrowLeft className="w-4 h-4" /> Back
@@ -841,16 +973,15 @@ export default function App() {
                   key={recipe.id}
                   onClick={() => {
                     setSelectedRecipe(recipe);
-                    const newRows: IngredientRow[] = recipe.ingredients
-                      .map(ing => {
-                        const key = RECIPE_INGREDIENT_MAP[ing.name];
-                        if (!key) return null;
-                        const profile = customIngredients[key];
-                        if (!profile) return null;
-                        return { key, grams: ing.amount, volumetricUnit: profile.volumetricUnit ?? 'cup' } as IngredientRow;
-                      })
-                      .filter(Boolean) as IngredientRow[];
-                    if (newRows.length > 0) setRows(newRows);
+                    const newRows = rowsFromRecipe(recipe, customIngredients);
+                    if (newRows) setRows(newRows);
+                    if (selectedCategory) {
+                      window.history.pushState(
+                        null,
+                        '',
+                        iceCreamCalculatorPath(selectedCategory.id, recipe.id),
+                      );
+                    }
                   }}
                   className={`text-sm px-3 py-1.5 rounded-full font-medium transition-colors ${
                     selectedRecipe?.id === recipe.id

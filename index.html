@@ -4,17 +4,74 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/icecream.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ice Cream Sensei</title>
+    <title>Ice Cream Sensei — Mix calculator, POD/PAC &amp; food science</title>
+    <meta
+      name="description"
+      content="Free ice cream mix calculator: adjust ingredients, see fat, sugar, MSNF, total solids, POD and PAC, nutrition facts, churning tips, and taste notes — built for makers who care about the science."
+    />
+    <link rel="canonical" href="https://icecreamsensei.senseifood.com/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ice Cream Sensei" />
+    <meta
+      property="og:title"
+      content="Ice Cream Sensei — Mix calculator, POD/PAC &amp; food science"
+    />
+    <meta
+      property="og:description"
+      content="Free ice cream mix calculator with POD/PAC, nutrition, churning guidance, and taste notes — for makers who care about the science."
+    />
+    <meta property="og:url" content="https://icecreamsensei.senseifood.com/" />
+    <meta property="og:image" content="https://icecreamsensei.senseifood.com/og-icecream-calc.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Ice Cream Sensei — Mix calculator, POD/PAC &amp; food science"
+    />
+    <meta
+      name="twitter:description"
+      content="Free ice cream mix calculator with POD/PAC, nutrition, churning guidance, and taste notes."
+    />
+    <meta name="twitter:image" content="https://icecreamsensei.senseifood.com/og-icecream-calc.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Ice Cream Sensei",
+        "url": "https://icecreamsensei.senseifood.com/",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Any",
+        "description": "Free ice cream mix calculator: ingredients, POD/PAC, nutrition, churning tips, and food science for home and craft makers.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGELXYQM6Z"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
+      function gtag() {
+        dataLayer.push(arguments);
+      }
       gtag('js', new Date());
       gtag('config', 'G-TGELXYQM6Z');
     </script>
   </head>
   <body>
+    <noscript>
+      <p style="margin: 1rem; font-family: system-ui, sans-serif">
+        Ice Cream Sensei needs JavaScript for the calculator. Enable JavaScript or open this page in a modern browser.
+      </p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
