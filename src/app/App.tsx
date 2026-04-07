@@ -650,6 +650,25 @@ export default function App() {
     }
     return { value: totalGrams.toFixed(1), unit: 'g' };
   };
+
+  /** Plain-text amount for print layout (no inputs/selects). */
+  const formatIngredientPrintAmount = (row: IngredientRow) => {
+    const g = Number(row.grams || 0);
+    if (row.key === 'egg_yolk' || row.key === 'whole_egg') {
+      const eggKey = row.key as 'egg_yolk' | 'whole_egg';
+      const size = row.eggSize || 'large';
+      const sz = EGG_SIZES[eggKey]?.[size];
+      if (sz && sz > 0) {
+        const count = g / sz;
+        const countStr = Number.isInteger(count) ? String(count) : count.toFixed(1);
+        const kind = row.key === 'egg_yolk' ? 'yolks' : 'eggs';
+        return `${countStr} × ${size} (${kind}); ${g.toFixed(0)} g`;
+      }
+    }
+    if (unitSystem === 'metric') return `${g.toFixed(1)} g`;
+    if (unitSystem === 'imperial') return `${gramsToOunces(g).toFixed(2)} oz (${g.toFixed(0)} g)`;
+    return `${formatVolumetricLabel(g, row.key, row.volumetricUnit)} (${g.toFixed(0)} g)`;
+  };
   
   // Add custom ingredient
   const handleAddCustomIngredient = () => {
@@ -785,7 +804,7 @@ export default function App() {
       <main className="app-print-main max-w-6xl mx-auto">
         <div className="flex flex-col gap-6 print-two-page-root">
           {/* Page 1 — recipe + mix (print:break-after-page) */}
-          <div className="space-y-6 print:break-after-page">
+          <div className="space-y-6 print-page-1 print:break-after-page">
             <div className="hidden print:block border-b-2 border-gray-800 pb-4 mb-2">
               <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
                 🍦 {selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
@@ -840,7 +859,7 @@ export default function App() {
                 </div>
                 <div className="text-sm text-gray-500 mt-1">Total mix {unitSystem === 'volumetric' ? 'volume' : 'mass'}</div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 print:hidden">
                 <div className="flex flex-col sm:flex-row gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
                   <Button 
                     onClick={() => setUnitSystem('metric')} 
@@ -1058,10 +1077,26 @@ export default function App() {
         <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
           <CardHeader>
             <CardTitle>Ingredients</CardTitle>
-            <CardDescription>Add and adjust ingredients for your ice cream mix</CardDescription>
+            <CardDescription className="print:hidden">Add and adjust ingredients for your ice cream mix</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <table className="hidden print:table w-full recipe-print-ingredients-table">
+              <thead>
+                <tr>
+                  <th>Ingredient</th>
+                  <th className="amt">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, index) => (
+                  <tr key={`print-${index}`}>
+                    <td>{customIngredients[row.key]?.label ?? row.key}</td>
+                    <td className="amt">{formatIngredientPrintAmount(row)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="space-y-3 print:hidden">
               {rows.map((row, index) => {
                 const ingredient = customIngredients[row.key];
                 return (
@@ -1242,7 +1277,7 @@ export default function App() {
                 );
               })}
             </div>
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-gray-500 mt-4 print:hidden">
               💡 Tip: Eggs show as count (small/medium/large/XL). In volumetric mode, choose cups/tbsp/tsp for each ingredient!
             </p>
           </CardContent>
@@ -1252,45 +1287,45 @@ export default function App() {
         <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
           <CardHeader>
             <CardTitle>Results</CardTitle>
-            <CardDescription>Mix composition analysis</CardDescription>
+            <CardDescription className="print:hidden">Mix composition analysis</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div className={`p-4 rounded-lg border-2 ${getStatusColor(results.fatPct, 12, 16)}`}>
+              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.fatPct, 12, 16)}`}>
                 <div className="text-3xl font-bold">{results.fatPct.toFixed(2)}%</div>
                 <div className="text-sm mt-1">Fat</div>
-                <div className="text-xs mt-1 opacity-70">Target: 12–16%</div>
+                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 12–16%</div>
               </div>
 
-              <div className={`p-4 rounded-lg border-2 ${getStatusColor(results.sugarPct, 14, 16)}`}>
+              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.sugarPct, 14, 16)}`}>
                 <div className="text-3xl font-bold">{results.sugarPct.toFixed(2)}%</div>
                 <div className="text-sm mt-1">Sugar solids</div>
-                <div className="text-xs mt-1 opacity-70">Target: 14–16%</div>
+                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 14–16%</div>
               </div>
 
-              <div className={`p-4 rounded-lg border-2 ${getStatusColor(results.msnfPct, 9, 11)}`}>
+              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.msnfPct, 9, 11)}`}>
                 <div className="text-3xl font-bold">{results.msnfPct.toFixed(2)}%</div>
                 <div className="text-sm mt-1">MSNF</div>
-                <div className="text-xs mt-1 opacity-70">Target: 9–11%</div>
+                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 9–11%</div>
               </div>
 
-              <div className={`p-4 rounded-lg border-2 ${getStatusColor(results.waterPct, 0, 100)}`}>
+              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.waterPct, 0, 100)}`}>
                 <div className="text-3xl font-bold">{results.waterPct.toFixed(2)}%</div>
                 <div className="text-sm mt-1">Water</div>
               </div>
 
-              <div className={`p-4 rounded-lg border-2 ${getStatusColor(results.totalSolidsPct, 36, 40)}`}>
+              <div className={`p-4 rounded-lg border-2 print:!border-gray-500 print:!bg-white print:!text-gray-900 ${getStatusColor(results.totalSolidsPct, 36, 40)}`}>
                 <div className="text-3xl font-bold">{results.totalSolidsPct.toFixed(2)}%</div>
                 <div className="text-sm mt-1">Total solids</div>
-                <div className="text-xs mt-1 opacity-70">Target: 36–40%</div>
+                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Target: 36–40%</div>
               </div>
 
-              <div className="p-4 rounded-lg border-2 bg-blue-500/10 text-blue-700 border-blue-200">
+              <div className="p-4 rounded-lg border-2 bg-blue-500/10 text-blue-700 border-blue-200 print:!border-gray-500 print:!bg-white print:!text-gray-900">
                 <div className="text-lg font-bold">
                   POD {results.POD.toFixed(1)} / PAC {results.PAC.toFixed(1)}
                 </div>
                 <div className="text-xs mt-1">Sweetness / Softness</div>
-                <div className="text-xs mt-1 opacity-70">Relative to sucrose</div>
+                <div className="text-xs mt-1 opacity-70 print:text-gray-600">Relative to sucrose</div>
               </div>
             </div>
 
@@ -1340,7 +1375,7 @@ export default function App() {
           </div>
 
           {/* Page 2 — nutrition only (matches cake app print layout) */}
-          <div className="print:break-before-page space-y-6">
+          <div className="print-page-2 print:break-before-page space-y-6">
             <div className="hidden print:block border-b-2 border-gray-800 pb-3 mb-2">
               <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
                 Nutrition Facts

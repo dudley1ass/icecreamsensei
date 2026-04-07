@@ -136,9 +136,21 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
     <Card className="print-clean-panel bg-white/80 backdrop-blur border-2 shadow-lg">
       <CardHeader>
         <CardTitle>POD & PAC Analysis</CardTitle>
-        <CardDescription>Sweetness and softness relative to sucrose baseline (values per kg)</CardDescription>
+        <CardDescription className="print:hidden">Sweetness and softness relative to sucrose baseline (values per kg)</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent>
+        <div className="hidden print:block border border-gray-800 p-4 text-sm space-y-3 mb-0">
+          <p className="font-bold text-gray-900">Sweetness & freezing (per kg of mix)</p>
+          <p>
+            <span className="font-semibold">POD (sweetness index):</span> {POD.toFixed(2)}{' '}
+            <span className="text-gray-600">— ~140 is a common sucrose-relative reference band.</span>
+          </p>
+          <p>
+            <span className="font-semibold">PAC (softness / freezing point):</span> {PAC.toFixed(2)}{' '}
+            <span className="text-gray-600">— higher PAC → softer at freezer temperature.</span>
+          </p>
+        </div>
+        <div className="space-y-8 print:hidden">
         <Scale
           label="POD (Power of Dextrose)"
           value={POD}
@@ -178,6 +190,7 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
             <li><strong>PAC &gt; {SUCROSE_PAC}:</strong> Softer at freezer temperature (easier to scoop)</li>
             <li><strong>Higher PAC:</strong> More freezing point depression (stays scoopable)</li>
           </ul>
+        </div>
         </div>
       </CardContent>
     </Card>
