@@ -8,15 +8,15 @@ interface IceCreamTypeSelectorProps {
 
 export function IceCreamTypeSelector({ categories, onSelectCategory }: IceCreamTypeSelectorProps) {
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #fef3c7 50%, #fde68a 100%)' }}>
-      <header className="text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #0e7490, #0891b2, #38bdf8)' }}>
+    <div className="min-h-screen print:hidden" style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #fce4ec 50%, #f3e5f5 100%)' }}>
+      <header className="text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #c0392b, #e74c3c, #e67e22)' }}>
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-4xl">🍦</span>
               <div>
                 <h1 className="text-3xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Ice Cream Sensei</h1>
-                <p className="text-cyan-100 text-sm">10 foundations · 30+ recipes · every ice cream technique covered</p>
+                <p className="text-red-100 text-sm">10 foundations · 30+ recipes · every ice cream technique covered</p>
               </div>
             </div>
           </div>
@@ -27,7 +27,7 @@ export function IceCreamTypeSelector({ categories, onSelectCategory }: IceCreamT
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <ChefHat className="w-6 h-6 text-cyan-700" />
+              <ChefHat className="w-6 h-6 text-red-700" />
               <h2 className="text-2xl font-bold text-gray-800">Choose an Ice Cream Style</h2>
             </div>
             <p className="text-gray-500 max-w-xl mx-auto text-sm">
@@ -40,13 +40,13 @@ export function IceCreamTypeSelector({ categories, onSelectCategory }: IceCreamT
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat, cat.recipes[0])}
-                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden text-left group hover:scale-[1.02] border-2 border-transparent hover:border-cyan-300"
+                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden text-left group hover:scale-[1.02] border-2 border-transparent hover:border-red-200"
               >
                 <div className="h-2 w-full" style={{ background: cat.gradient }} />
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <span className="text-4xl">{cat.emoji}</span>
-                    <div className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-cyan-50 text-cyan-700">
+                    <div className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-red-50 text-red-700">
                       {cat.recipes.length} recipes
                       <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>

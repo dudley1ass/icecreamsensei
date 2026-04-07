@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, RotateCcw, X, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles, ArrowLeft } from 'lucide-react';
+import { Plus, RotateCcw, X, Droplet, Cookie, FlaskConical, Weight, Apple, Candy, Nut, Beef, Droplets, Sparkles, ArrowLeft, Printer } from 'lucide-react';
 import { IceCreamTypeSelector } from './components/IceCreamTypeSelector';
 import { iceCreamCategories, IceCreamCategory, IceCreamRecipe } from './types/iceCreamTypes';
 import { Button } from './components/ui/button';
@@ -11,9 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from './components/ui/label';
 import { NutritionFacts } from './components/NutritionFacts';
 import { PODPACScales } from './components/PODPACScales';
-import { PrintRecipeCard } from './components/PrintRecipeCard';
-
-
 // Ingredient composition fractions by weight (0-1)
 interface IngredientProfile {
   label: string;
@@ -744,15 +741,23 @@ export default function App() {
     );
   }
 
+  const handlePrint = () => window.print();
+
   return (
-    <div className="min-h-screen p-4 md:p-8" style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #fef3c7 50%, #fde68a 100%)' }}>
-      {/* Header bar matching IceCreamTypeSelector */}
-      <div className="text-white shadow-lg rounded-2xl mb-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0e7490, #0891b2, #38bdf8)' }}>
-        <div className="px-6 py-4 flex items-center justify-between">
+    <div
+      className="min-h-screen app-print-root p-4 md:p-8"
+      style={{ background: 'linear-gradient(135deg, #fdf6e3 0%, #fce4ec 50%, #f3e5f5 100%)' }}
+    >
+      <header
+        className="app-print-header text-white shadow-lg rounded-2xl mb-6 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #c0392b, #e74c3c, #e67e22)' }}
+      >
+        <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => setView('selector')}
-              className="flex items-center gap-1 text-cyan-100 hover:text-white text-sm mr-2 transition-colors"
+              className="flex items-center gap-1 text-white/80 hover:text-white text-sm mr-2 transition-colors print:hidden"
             >
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
@@ -761,29 +766,39 @@ export default function App() {
               <h1 className="text-2xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>
                 {selectedCategory ? selectedCategory.name : 'Ice Cream'} — Mix Calculator
               </h1>
-              <p className="text-cyan-100 text-sm">
+              <p className="text-red-100 text-sm">
                 {selectedRecipe ? selectedRecipe.name : 'Custom mix'} · edit ingredients below
               </p>
             </div>
           </div>
-          <PrintRecipeCard
-            recipeName={selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
-            categoryName={selectedCategory ? selectedCategory.name : 'Ice Cream'}
-            rows={rows.map(r => ({
-              label: customIngredients[r.key]?.label ?? r.key,
-              grams: r.grams,
-              category: customIngredients[r.key]?.category ?? '',
-            }))}
-            results={results}
-            unitSystem={unitSystem}
-          />
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="print:hidden flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-2 rounded-xl transition-all border border-white/30"
+          >
+            <Printer className="w-4 h-4" />
+            Print
+          </button>
         </div>
-      </div>
-      <div className="max-w-6xl mx-auto space-y-6">
+      </header>
+
+      <main className="app-print-main max-w-6xl mx-auto">
+        <div className="flex flex-col gap-6 print-two-page-root">
+          {/* Page 1 — recipe + mix (print:break-after-page) */}
+          <div className="space-y-6 print:break-after-page">
+            <div className="hidden print:block border-b-2 border-gray-800 pb-4 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+                🍦 {selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {selectedCategory ? selectedCategory.name : 'Ice Cream'}
+                {unitSystem === 'metric' ? ' · amounts in grams' : unitSystem === 'imperial' ? ' · amounts in oz' : ' · volumetric'}
+              </p>
+            </div>
 
         {/* Recipe selector row */}
         {selectedCategory && selectedCategory.recipes.length > 1 && (
-          <div className="bg-white rounded-2xl shadow-sm px-5 py-3 flex items-center gap-3 flex-wrap">
+          <div className="bg-white rounded-2xl shadow-sm px-5 py-3 flex items-center gap-3 flex-wrap print:hidden">
             <span className="text-sm font-semibold text-gray-600">Recipe:</span>
             <div className="flex flex-wrap gap-2">
               {selectedCategory.recipes.map(recipe => (
@@ -816,7 +831,7 @@ export default function App() {
         )}
 
         {/* Total Mass Card */}
-        <Card className="bg-white rounded-2xl shadow-md border-0">
+        <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
@@ -1040,7 +1055,7 @@ export default function App() {
         </Card>
 
         {/* Ingredients Table */}
-        <Card className="bg-white rounded-2xl shadow-md border-0">
+        <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
           <CardHeader>
             <CardTitle>Ingredients</CardTitle>
             <CardDescription>Add and adjust ingredients for your ice cream mix</CardDescription>
@@ -1234,7 +1249,7 @@ export default function App() {
         </Card>
 
         {/* Results */}
-        <Card className="bg-white rounded-2xl shadow-md border-0">
+        <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
           <CardHeader>
             <CardTitle>Results</CardTitle>
             <CardDescription>Mix composition analysis</CardDescription>
@@ -1307,37 +1322,6 @@ export default function App() {
           </CardContent>
         </Card>
 
-        {/* Nutrition Facts */}
-        <Card className="bg-white rounded-2xl shadow-md border-0">
-          <CardHeader>
-            <CardTitle>Nutrition Facts</CardTitle>
-            <CardDescription>Total grams of each component in your mix</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <NutritionFacts
-              mass={results.mass}
-              fatGrams={results.fatGrams}
-              sugarGrams={results.sugarGrams}
-              msnfGrams={results.msnfGrams}
-              waterGrams={results.waterGrams}
-              otherSolidsGrams={results.otherSolidsGrams}
-              proteinGrams={results.proteinGrams}
-              saturatedFatGrams={results.saturatedFatGrams}
-              transFatGrams={results.transFatGrams}
-              cholesterolMg={results.cholesterolMg}
-              sodiumMg={results.sodiumMg}
-              totalCalories={results.totalCalories}
-              fiberGrams={results.fiberGrams}
-              vitaminDMcg={results.vitaminDMcg}
-              calciumMg={results.calciumMg}
-              ironMg={results.ironMg}
-              potassiumMg={results.potassiumMg}
-              unitSystem={unitSystem}
-              totalVolumeML={calculateTotalVolumeML()}
-            />
-          </CardContent>
-        </Card>
-
         {/* POD/PAC Scales */}
         <PODPACScales
           POD={results.POD}
@@ -1345,7 +1329,7 @@ export default function App() {
         />
 
         {/* Footer Note */}
-        <Card className="bg-white rounded-2xl shadow-sm border-0">
+        <Card className="print-clean-panel bg-white rounded-2xl shadow-sm border-0">
           <CardContent className="pt-6">
             <p className="text-sm text-gray-600">
               <span className="font-semibold">Note:</span> These are engineering defaults. Brands vary. 
@@ -1353,7 +1337,51 @@ export default function App() {
             </p>
           </CardContent>
         </Card>
-      </div>
+          </div>
+
+          {/* Page 2 — nutrition only (matches cake app print layout) */}
+          <div className="print:break-before-page space-y-6">
+            <div className="hidden print:block border-b-2 border-gray-800 pb-3 mb-2">
+              <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+                Nutrition Facts
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {selectedRecipe ? selectedRecipe.name : 'Custom Mix'}
+                {selectedCategory ? ` · ${selectedCategory.name}` : ''}
+              </p>
+            </div>
+            <Card className="print-clean-panel bg-white rounded-2xl shadow-md border-0">
+              <CardHeader className="print:hidden">
+                <CardTitle>Nutrition Facts</CardTitle>
+                <CardDescription>Total grams of each component in your mix</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <NutritionFacts
+                  mass={results.mass}
+                  fatGrams={results.fatGrams}
+                  sugarGrams={results.sugarGrams}
+                  msnfGrams={results.msnfGrams}
+                  waterGrams={results.waterGrams}
+                  otherSolidsGrams={results.otherSolidsGrams}
+                  proteinGrams={results.proteinGrams}
+                  saturatedFatGrams={results.saturatedFatGrams}
+                  transFatGrams={results.transFatGrams}
+                  cholesterolMg={results.cholesterolMg}
+                  sodiumMg={results.sodiumMg}
+                  totalCalories={results.totalCalories}
+                  fiberGrams={results.fiberGrams}
+                  vitaminDMcg={results.vitaminDMcg}
+                  calciumMg={results.calciumMg}
+                  ironMg={results.ironMg}
+                  potassiumMg={results.potassiumMg}
+                  unitSystem={unitSystem}
+                  totalVolumeML={calculateTotalVolumeML()}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

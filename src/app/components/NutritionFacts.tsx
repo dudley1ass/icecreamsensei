@@ -107,7 +107,7 @@ export function NutritionFacts({
   const servingAddedSugars = sugarGrams * servingMultiplier; // Only added sweeteners
 
   return (
-    <Card className="bg-white border-2 border-black max-w-md">
+    <Card className="print-nutrition-label bg-white border-2 border-black max-w-md">
       <CardHeader className="border-b-8 border-black pb-2">
         <CardTitle className="text-3xl font-black">Nutrition Facts</CardTitle>
         <div className="text-sm mt-1">

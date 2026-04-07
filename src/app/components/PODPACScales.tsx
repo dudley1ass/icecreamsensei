@@ -133,7 +133,7 @@ export function PODPACScales({ POD, PAC }: PODPACScalesProps) {
   };
 
   return (
-    <Card className="bg-white/80 backdrop-blur border-2 shadow-lg">
+    <Card className="print-clean-panel bg-white/80 backdrop-blur border-2 shadow-lg">
       <CardHeader>
         <CardTitle>POD & PAC Analysis</CardTitle>
         <CardDescription>Sweetness and softness relative to sucrose baseline (values per kg)</CardDescription>
