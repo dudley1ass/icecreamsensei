@@ -729,12 +729,26 @@ export default function App() {
     const t=w+fw;
     return t>0?`${t}${fracStr} tsp`:fracStr?`${fracStr} tsp`:'¼ tsp';
   };
-  const gramsToVolumetric = (grams: number, ingredientKey: string, _rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz') => {
+  const VOLUME_UNIT_ML: Record<'cup' | 'tbsp' | 'tsp' | 'fl oz', number> = {
+    cup: 236.588,
+    'fl oz': 29.5735,
+    tbsp: 14.7868,
+    tsp: 4.92892,
+  };
+
+  const gramsToVolumetric = (grams: number, ingredientKey: string, rowUnit: 'cup' | 'tbsp' | 'tsp' | 'fl oz' = 'cup') => {
     const ing = customIngredients[ingredientKey];
     if (!ing) return { value: grams, unit: 'g', formatted: `${grams.toFixed(1)} g` };
     const density = ing.density || 1.0;
-    const cups = grams / (density * 236.588);
-    return { value: cups, unit: 'cups', formatted: formatCupsStr(cups) };
+    const totalML = grams / density;
+    const unitML = VOLUME_UNIT_ML[rowUnit];
+    const convertedValue = totalML / unitML;
+
+    if (rowUnit === 'cup') {
+      return { value: convertedValue, unit: rowUnit, formatted: formatCupsStr(convertedValue) };
+    }
+
+    return { value: convertedValue, unit: rowUnit, formatted: `${convertedValue.toFixed(2)} ${rowUnit}` };
   };
   
   const formatAmount = (grams: number, ingredientKey?: string, rowUnit?: 'cup' | 'tbsp' | 'tsp' | 'fl oz', eggSize?: 'small' | 'medium' | 'large' | 'extra-large') => {
@@ -1306,33 +1320,27 @@ export default function App() {
                       ) : (
                         <div className="w-36">
                         {unitSystem === 'volumetric' && row.key ? (
-                          // Volumetric: show friendly fraction with +/- buttons
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => {
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              step={row.volumetricUnit === 'cup' ? '0.125' : row.volumetricUnit === 'tsp' ? '0.25' : '0.1'}
+                              value={formatAmount(row.grams, row.key, row.volumetricUnit, row.eggSize)}
+                              onChange={(e) => {
                                 const ing = customIngredients[row.key];
-                                if (ing) {
-                                  const stepGrams = 0.125 * 236.588 * (ing.density || 1.0);
-                                  updateRow(index, 'grams', Math.max(0, row.grams - stepGrams));
-                                }
+                                if (!ing) return;
+                                const inputValue = Number(e.target.value);
+                                const selectedUnit = row.volumetricUnit || ing.volumetricUnit || 'cup';
+                                const unitML = VOLUME_UNIT_ML[selectedUnit];
+                                const gramsValue = inputValue * unitML * (ing.density || 1.0);
+                                updateRow(index, 'grams', gramsValue);
                               }}
-                              className="w-7 h-9 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold text-lg flex items-center justify-center flex-shrink-0"
-                            >−</button>
-                            <div className="flex-1 h-9 rounded-lg border border-gray-300 bg-white flex items-center justify-center px-1">
-                              <span className="text-sm font-semibold text-cyan-700 text-center leading-tight">
-                                {row.grams > 0 ? formatVolumetricLabel(row.grams, row.key, row.volumetricUnit) : '0'}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                const ing = customIngredients[row.key];
-                                if (ing) {
-                                  const stepGrams = 0.125 * 236.588 * (ing.density || 1.0);
-                                  updateRow(index, 'grams', row.grams + stepGrams);
-                                }
-                              }}
-                              className="w-7 h-9 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold text-lg flex items-center justify-center flex-shrink-0"
-                            >+</button>
+                              className="text-right pr-20"
+                              placeholder="0"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+                              {row.volumetricUnit || ingredient.volumetricUnit || 'cup'}
+                            </span>
                           </div>
                         ) : (
                           // Metric / Imperial: normal number input
